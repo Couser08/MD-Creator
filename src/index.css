@@ -1,0 +1,182 @@
+@import "tailwindcss";
+@import "katex/dist/katex.min.css";
+
+@layer base {
+  :root {
+    --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-handwriting: 'Caveat', cursive;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+}
+
+body {
+  font-family: var(--font-sans);
+  overflow-x: hidden;
+}
+
+.font-handwriting {
+  font-family: var(--font-handwriting);
+}
+
+.font-mono-code {
+  font-family: var(--font-mono);
+}
+
+/* Custom smooth transitions */
+* {
+  border-color: var(--color-neutral-200, #e5e5e5);
+}
+
+.dark * {
+  border-color: var(--color-neutral-800, #262626);
+}
+
+/* Subtle glassmorphism */
+.glass-nav {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.dark .glass-nav {
+  background: rgba(10, 10, 10, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(163, 163, 163, 0.3);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(163, 163, 163, 0.5);
+}
+
+/* Wavy gradient background for CTA */
+.wavy-gradient {
+  background: radial-gradient(circle at 50% 100%, rgba(224, 231, 255, 0.6) 0%, rgba(243, 244, 246, 0.8) 40%, rgba(255, 255, 255, 1) 100%);
+}
+
+.dark .wavy-gradient {
+  background: radial-gradient(circle at 50% 100%, rgba(30, 27, 75, 0.4) 0%, rgba(23, 23, 23, 0.8) 40%, rgba(10, 10, 10, 1) 100%);
+}
+
+/* Code block highlight tokens */
+.hljs-keyword, .hljs-selector-tag { color: #818cf8; font-weight: 600; }
+.hljs-string, .hljs-title { color: #34d399; }
+.hljs-comment { color: #71717a; font-style: italic; }
+.hljs-number, .hljs-literal { color: #f59e0b; }
+.hljs-attr, .hljs-variable { color: #38bdf8; }
+.hljs-function { color: #a78bfa; }
+
+/* ==============================================================================
+   PUBLICATION-GRADE PRINT & PDF STYLESHEET
+   Forces crisp white paper and black typography regardless of active Dark/Light mode
+   ============================================================================== */
+@media print {
+  @page {
+    margin: 20mm 15mm;
+    size: A4 portrait;
+  }
+
+  /* Force pure white background and neutral dark text on whole page */
+  html, body, #root {
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  /* Suppress all chrome, navigation, toolbars, and inputs */
+  header, footer, nav, aside, 
+  .no-print, 
+  .editor-pane-container, 
+  .editor-status-bar, 
+  .editor-top-nav,
+  input, textarea, button {
+    display: none !important;
+  }
+
+  /* Maximize and format the preview section */
+  .preview-pane-container {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background-color: #ffffff !important;
+    color: #111827 !important;
+    overflow: visible !important;
+  }
+
+  /* Force all children inside preview to be print-friendly */
+  .preview-pane-container * {
+    color: #111827 !important;
+    background-color: transparent !important;
+    border-color: #e5e7eb !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  /* Clean Code blocks in print */
+  .preview-pane-container pre,
+  .preview-pane-container code {
+    background-color: #f8fafc !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #0f172a !important;
+    font-size: 11px !important;
+    border-radius: 6px !important;
+  }
+
+  /* Clean Blockquotes in print */
+  .preview-pane-container blockquote {
+    background-color: #f8fafc !important;
+    border-left: 3px solid #0284c7 !important;
+    padding: 8px 12px !important;
+  }
+
+  /* Clean Tables in print */
+  .preview-pane-container table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  .preview-pane-container th {
+    background-color: #f1f5f9 !important;
+    border: 1px solid #cbd5e1 !important;
+    font-weight: bold !important;
+  }
+
+  .preview-pane-container td {
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  /* Smart page breaks */
+  h1, h2, h3, h4, h5, h6 {
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  pre, blockquote, table, tr, figure, img {
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+  }
+
+  /* Links in print */
+  a {
+    text-decoration: underline !important;
+    color: #0369a1 !important;
+  }
+}

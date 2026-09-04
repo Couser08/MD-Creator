@@ -1,0 +1,176 @@
+import Dexie, { type EntityTable } from 'dexie';
+
+export interface DocumentMetadata {
+  id: string;
+  title: string;
+  snippet: string; // First 2-3 lines preview
+  tags: string[];
+  createdAt: number;
+  updatedAt: number;
+  lastOpenedAt?: number;
+  openCount: number;
+  isPinned: boolean;
+  isFavorite: boolean;
+  sizeBytes: number;
+  wordCount: number;
+}
+
+export interface CachedContent {
+  id: string; // Matches DocumentMetadata.id
+  content: string; // Full markdown text
+  cachedAt: number;
+  isDirty?: boolean;
+}
+
+// Database declaration extending Dexie
+export class MdWriterDB extends Dexie {
+  documents!: EntityTable<DocumentMetadata, 'id'>;
+  document_cache!: EntityTable<CachedContent, 'id'>;
+
+  constructor() {
+    super('MdWriterDB');
+    this.version(1).stores({
+      documents: 'id, title, updatedAt, createdAt, isPinned, isFavorite, openCount, *tags',
+      document_cache: 'id, cachedAt'
+    });
+  }
+}
+
+export const db = new MdWriterDB();
+
+/**
+ * Extracts a lightweight 2-3 line preview snippet from raw Markdown.
+ */
+export function extractSnippet(markdown: string): string {
+  const lines = markdown
+    .split('\n')
+    .map(l => l.trim())
+    .filter(l => l.length > 0 && !l.startsWith('---')); // filter empty lines and frontmatter markers
+
+  return lines.slice(0, 3).join(' \n ');
+}
+
+/**
+ * Calculates word count from text.
+ */
+export function countWords(text: string): number {
+  return text.trim() ? text.trim().split(/\s+/).length : 0;
+}
+
+/**
+ * Retrieves full document content from the cache.
+ * If not present in cache, generates default content or fetches from fallback.
+ */
+export async function getDocumentContent(id: string): Promise<string> {
+  // Update lastOpenedAt and openCount in metadata
+  await db.documents.update(id, {
+    lastOpenedAt: Date.now(),
+    openCount: (await db.documents.get(id))?.openCount ? ((await db.documents.get(id))!.openCount + 1) : 1
+  });
+
+  const cached = await db.document_cache.get(id);
+  if (cached) {
+    return cached.content;
+  }
+
+  // If not in cache, create placeholder or return empty
+  const doc = await db.documents.get(id);
+  const fallbackContent = doc ? `# ${doc.title}\n\nStart writing here...` : '';
+  await db.document_cache.put({
+    id,
+    content: fallbackContent,
+    cachedAt: Date.now()
+  });
+
+  return fallbackContent;
+}
+
+/**
+ * Saves full document content: caches it in Dexie and updates metadata snippet.
+ */
+export async function saveDocument(id: string, title: string, content: string, tags: string[] = []): Promise<void> {
+  const now = Date.now();
+  const snippet = extractSnippet(content);
+  const wordCount = countWords(content);
+  const sizeBytes = new Blob([content]).size;
+
+  await db.transaction('rw', db.documents, db.document_cache, async () => {
+    // 1. Cache full content
+    await db.document_cache.put({
+      id,
+      content,
+      cachedAt: now
+    });
+
+    // 2. Update or insert lightweight metadata
+    const existing = await db.documents.get(id);
+    if (existing) {
+      await db.documents.update(id, {
+        title,
+        snippet,
+        tags: tags.length ? tags : existing.tags,
+        updatedAt: now,
+        wordCount,
+        sizeBytes
+      });
+    } else {
+      await db.documents.put({
+        id,
+        title,
+        snippet,
+        tags,
+        createdAt: now,
+        updatedAt: now,
+        openCount: 1,
+        isPinned: false,
+        isFavorite: false,
+        wordCount,
+        sizeBytes
+      });
+    }
+  });
+}
+
+/**
+ * Creates a brand new document draft.
+ */
+export async function createNewDocument(title = 'Untitled Document', initialContent = '# Untitled\n\nStart writing with Markdown...'): Promise<string> {
+  const id = `doc_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`;
+  await saveDocument(id, title, initialContent, ['General']);
+  return id;
+}
+
+/**
+ * Deletes a document and evicts its cached content from IndexedDB.
+ */
+export async function deleteDocument(id: string): Promise<void> {
+  await db.transaction('rw', db.documents, db.document_cache, async () => {
+    await db.documents.delete(id);
+    await db.document_cache.delete(id);
+  });
+}
+
+/**
+ * Toggles the pinned status of a document.
+ */
+export async function togglePinDocument(id: string): Promise<boolean> {
+  const doc = await db.documents.get(id);
+  if (!doc) return false;
+  const newPinned = !doc.isPinned;
+  await db.documents.update(id, { isPinned: newPinned });
+  return newPinned;
+}
+
+/**
+ * Gets storage and cache usage statistics.
+ */
+export async function getStorageStats(): Promise<{ totalDocs: number; cachedDocs: number; totalBytes: number }> {
+  const totalDocs = await db.documents.count();
+  const cached = await db.document_cache.toArray();
+  const totalBytes = cached.reduce((acc, curr) => acc + new Blob([curr.content]).size, 0);
+  return {
+    totalDocs,
+    cachedDocs: cached.length,
+    totalBytes
+  };
+}
