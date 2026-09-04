@@ -26,3 +26,8 @@ dist-ssr
 
 # Temporaries
 .system_generated
+
+# Environment variables
+.env
+.env.*
+!.env.example
