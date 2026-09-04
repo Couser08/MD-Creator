@@ -58,3 +58,20 @@ export const useThemeStore = create<ThemeState>((set, get) => {
     }
   };
 });
+
+// Listen to OS system color scheme changes if user selected 'system'
+if (typeof window !== 'undefined') {
+  try {
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleSystemChange = (e: MediaQueryListEvent) => {
+      if (useThemeStore.getState().theme === 'system') {
+        applyThemeClass(e.matches);
+        useThemeStore.setState({ isDark: e.matches });
+      }
+    };
+    mediaQuery.addEventListener('change', handleSystemChange);
+  } catch (e) {
+    console.error('Failed to attach prefers-color-scheme listener', e);
+  }
+}
+

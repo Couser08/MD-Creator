@@ -17,8 +17,13 @@ import {
   ChevronDown,
   Sparkles,
   Copy,
-  Printer,
-  FolderOpen
+  FolderOpen,
+  Table2,
+  Timer,
+  Play,
+  Pause,
+  RotateCcw,
+  AlignCenterVertical
 } from 'lucide-react';
 import { useThemeStore } from '../stores/useThemeStore';
 import { db, saveDocument, getDocumentContent, createNewDocument, DocumentMetadata } from '../db';
@@ -26,6 +31,8 @@ import { MarkdownPreview } from '../components/editor/MarkdownPreview';
 import { SlashCommandMenu, COMMANDS } from '../components/editor/SlashCommandMenu';
 import { DocumentDrawer } from '../components/editor/DocumentDrawer';
 import { DocumentSwitcherModal } from '../components/editor/DocumentSwitcherModal';
+import { ExportPdfModal } from '../components/editor/ExportPdfModal';
+import { TableBuilderModal } from '../components/editor/TableBuilderModal';
 import { syncDocumentToSupabase, isSupabaseConfigured } from '../lib/supabase';
 
 type ViewMode = 'split' | 'write' | 'read' | 'zen';
@@ -52,6 +59,18 @@ export const EditorPage: React.FC = () => {
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
   const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
   const [copyToast, setCopyToast] = useState<string | null>(null);
+
+  // Free & Pro Features: PDF Studio, Table Builder, Typewriter, Sprint Timer
+  const [isPdfStudioOpen, setIsPdfStudioOpen] = useState(false);
+  const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
+  const [isTypewriterMode, setIsTypewriterMode] = useState(false);
+
+  // Focus Sprint Timer
+  const [isSprintActive, setIsSprintActive] = useState(false);
+  const [sprintDuration, setSprintDuration] = useState(25); // minutes
+  const [sprintSecondsRemaining, setSprintSecondsRemaining] = useState(25 * 60);
+  const [sprintStartWordCount, setSprintStartWordCount] = useState(0);
+  const [isSprintPopoverOpen, setIsSprintPopoverOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -85,7 +104,7 @@ export const EditorPage: React.FC = () => {
     return () => { isMounted = false; };
   }, [id]);
 
-  // Global Keyboard Shortcuts (Ctrl+O for File Switcher, Ctrl+S for Save)
+  // Global Keyboard Shortcuts (Ctrl+O for File Switcher, Ctrl+S for Save, Esc to exit Zen Mode)
   useEffect(() => {
     const handleGlobalKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
@@ -96,20 +115,36 @@ export const EditorPage: React.FC = () => {
         e.preventDefault();
         executeSave(content, title);
       }
+      if (e.key === 'Escape' && viewMode === 'zen' && !isSlashMenuOpen && !isSwitcherOpen && !isDrawerOpen && !isExportMenuOpen) {
+        setViewMode('split');
+      }
     };
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [content, title]);
+  }, [content, title, viewMode, isSlashMenuOpen, isSwitcherOpen, isDrawerOpen, isExportMenuOpen]);
 
-  // Track cursor position
+  // Reset slash selection when query changes
+  useEffect(() => {
+    setSlashSelectedIndex(0);
+  }, [slashQuery]);
+
+
+  // Track cursor position & apply Typewriter scrolling
   const updateCursorPosition = () => {
     if (!textareaRef.current) return;
     const text = textareaRef.current.value.substring(0, textareaRef.current.selectionStart);
     const lines = text.split('\n');
+    const currentLine = lines.length;
     setCursorPos({
-      line: lines.length,
+      line: currentLine,
       col: lines[lines.length - 1].length + 1
     });
+
+    if (isTypewriterMode) {
+      const lineHeight = 24;
+      const targetScroll = (currentLine - 1) * lineHeight - (textareaRef.current.clientHeight / 2) + lineHeight;
+      textareaRef.current.scrollTop = Math.max(0, targetScroll);
+    }
   };
 
   // Perform Save to Dexie and background Supabase
@@ -126,6 +161,74 @@ export const EditorPage: React.FC = () => {
     setIsSaving(false);
     setIsSaved(true);
   }, [docId, docMetadata?.tags]);
+
+  // Sprint Timer countdown & word delta tracking
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | null = null;
+    if (isSprintActive) {
+      interval = setInterval(() => {
+        setSprintSecondsRemaining(prev => {
+          if (prev <= 1) {
+            setIsSprintActive(false);
+            const wordsWritten = Math.max(0, (content.trim() ? content.trim().split(/\s+/).length : 0) - sprintStartWordCount);
+            setCopyToast(`🎉 Focus Sprint Completed! You wrote ${wordsWritten} words!`);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isSprintActive, content, sprintStartWordCount]);
+
+  const handleStartSprint = (minutes?: number) => {
+    const mins = minutes || sprintDuration;
+    const currentWords = content.trim() ? content.trim().split(/\s+/).length : 0;
+    setSprintDuration(mins);
+    setSprintSecondsRemaining(mins * 60);
+    setSprintStartWordCount(currentWords);
+    setIsSprintActive(true);
+    setIsSprintPopoverOpen(false);
+  };
+
+  const handlePauseSprint = () => {
+    setIsSprintActive(false);
+  };
+
+  const handleResetSprint = () => {
+    setIsSprintActive(false);
+    setSprintSecondsRemaining(sprintDuration * 60);
+  };
+
+  const formatSprintTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s < 10 ? '0' : ''}${s}`;
+  };
+
+  // Insert Table from Table Builder modal
+  const handleInsertTableFromModal = (tableMarkdown: string) => {
+    if (!textareaRef.current) {
+      const next = content + '\n\n' + tableMarkdown;
+      setContent(next);
+      executeSave(next, title);
+      return;
+    }
+    const cursor = textareaRef.current.selectionStart;
+    const before = content.substring(0, cursor);
+    const after = content.substring(cursor);
+    const next = before + '\n\n' + tableMarkdown + '\n' + after;
+    setContent(next);
+    setIsSaved(false);
+    executeSave(next, title);
+    setTimeout(() => {
+      if (textareaRef.current) {
+        textareaRef.current.focus();
+      }
+    }, 50);
+  };
 
   // Handle content changes
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -177,6 +280,14 @@ export const EditorPage: React.FC = () => {
     const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
     const cleanBefore = lastSlashIndex !== -1 ? textBeforeCursor.substring(0, lastSlashIndex) : textBeforeCursor;
 
+    if (snippet === '__ACTION_OPEN_TABLE_BUILDER__') {
+      setContent(cleanBefore + afterCursor);
+      setIsSlashMenuOpen(false);
+      setSlashQuery('');
+      setIsTableBuilderOpen(true);
+      return;
+    }
+
     const nextContent = cleanBefore + snippet + afterCursor;
     setContent(nextContent);
     setIsSlashMenuOpen(false);
@@ -227,22 +338,26 @@ export const EditorPage: React.FC = () => {
     }
   };
 
-  // Toggle interactive checklist item in markdown
-  const handleToggleTask = (taskText: string, currentChecked: boolean) => {
-    const targetUnchecked = `- [ ] ${taskText}`;
-    const targetChecked = `- [x] ${taskText}`;
-    let nextContent = content;
+  // Toggle interactive checklist item in markdown by task index
+  const handleToggleTask = (taskIndex: number, _currentChecked: boolean) => {
+    let counter = 0;
+    const taskRegex = /^(\s*[-*+]\s*\[)([ xX])(\]\s.*)$/gm;
 
-    if (currentChecked && content.includes(targetChecked)) {
-      nextContent = content.replace(targetChecked, targetUnchecked);
-    } else if (!currentChecked && content.includes(targetUnchecked)) {
-      nextContent = content.replace(targetUnchecked, targetChecked);
-    }
+    const nextContent = content.replace(taskRegex, (match, prefix, checkChar, suffix) => {
+      if (counter === taskIndex) {
+        counter++;
+        const nextChar = checkChar.trim().toLowerCase() === 'x' ? ' ' : 'x';
+        return `${prefix}${nextChar}${suffix}`;
+      }
+      counter++;
+      return match;
+    });
 
     setContent(nextContent);
     setIsSaved(false);
     executeSave(nextContent, title);
   };
+
 
   // Update tags from drawer
   const handleUpdateTags = async (newTags: string[]) => {
@@ -261,12 +376,6 @@ export const EditorPage: React.FC = () => {
     a.click();
     URL.revokeObjectURL(url);
     setIsExportMenuOpen(false);
-  };
-
-  const handleExportPdf = () => {
-    setIsExportMenuOpen(false);
-    // Print window triggers clean @media print styles
-    window.print();
   };
 
   const handleCopyMarkdown = () => {
@@ -295,6 +404,21 @@ export const EditorPage: React.FC = () => {
         </div>
       )}
 
+      {/* Floating Exit Zen Mode Button */}
+      {viewMode === 'zen' && (
+        <div className="fixed top-3 right-5 z-50 animate-in fade-in slide-in-from-top-1 duration-200 no-print">
+          <button
+            onClick={() => setViewMode('split')}
+            className="px-3 py-1.5 rounded-full bg-neutral-900/85 hover:bg-neutral-900 text-white dark:bg-neutral-100/90 dark:hover:bg-white dark:text-neutral-950 text-xs font-semibold backdrop-blur-md shadow-lg flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 select-none ring-1 ring-black/10 dark:ring-white/20"
+            title="Exit Zen Mode (or press Esc)"
+          >
+            <Minimize2 className="w-3.5 h-3.5" />
+            <span>Exit Zen <kbd className="font-mono text-[10px] bg-white/20 dark:bg-black/15 px-1 py-0.2 rounded ml-0.5">Esc</kbd></span>
+          </button>
+        </div>
+      )}
+
+
       {/* Editor Top Navigation Bar */}
       <header className={`h-14 border-b border-neutral-200 dark:border-neutral-800 px-4 flex items-center justify-between bg-white dark:bg-neutral-900 select-none z-30 transition-all no-print ${
         viewMode === 'zen' ? 'opacity-0 hover:opacity-100 duration-200' : ''
@@ -320,7 +444,7 @@ export const EditorPage: React.FC = () => {
             <span className="hidden md:inline">Open...</span>
           </button>
 
-          <div className="h-4 w-px bg-neutral-200 dark:border-neutral-800"></div>
+          <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800"></div>
 
           <div className="flex items-center gap-2">
             <FileText className="w-4 h-4 text-neutral-400" />
@@ -418,6 +542,16 @@ export const EditorPage: React.FC = () => {
             <span className="hidden sm:inline">Save</span>
           </button>
 
+          {/* Visual Table Builder Button */}
+          <button
+            onClick={() => setIsTableBuilderOpen(true)}
+            className="px-2.5 py-1.5 rounded-lg border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Visual Table Builder (or type /table)"
+          >
+            <Table2 className="w-3.5 h-3.5 text-blue-500" />
+            <span className="hidden sm:inline">Table</span>
+          </button>
+
           {/* Export Dropdown Menu */}
           <div className="relative">
             <button
@@ -430,26 +564,38 @@ export const EditorPage: React.FC = () => {
             </button>
 
             {isExportMenuOpen && (
-              <div className="absolute right-0 mt-1.5 w-48 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-1 z-50 text-xs animate-in fade-in zoom-in-95 duration-100">
+              <div className="absolute right-0 mt-1.5 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
+                <button
+                  onClick={() => {
+                    setIsExportMenuOpen(false);
+                    setIsPdfStudioOpen(true);
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300 cursor-pointer bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/30"
+                >
+                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+                  <div>
+                    <div className="font-bold text-neutral-950 dark:text-white flex items-center gap-1.5">
+                      <span>PDF Export Studio</span>
+                      <span className="text-[9px] bg-indigo-600 text-white dark:bg-indigo-500 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">NEW</span>
+                    </div>
+                    <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Custom themes, cover & TOC</div>
+                  </div>
+                </button>
+
+                <div className="border-t border-neutral-100 dark:border-neutral-800 my-1"></div>
+
                 <button
                   onClick={handleExportMd}
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2 text-neutral-700 dark:text-neutral-300 cursor-pointer"
                 >
-                  <Download className="w-3.5 h-3.5" />
+                  <Download className="w-3.5 h-3.5 text-neutral-500" />
                   <span>Download .md</span>
-                </button>
-                <button
-                  onClick={handleExportPdf}
-                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2 text-neutral-700 dark:text-neutral-300 cursor-pointer"
-                >
-                  <Printer className="w-3.5 h-3.5 text-blue-500" />
-                  <span className="font-semibold">Print to PDF (Clean)</span>
                 </button>
                 <button
                   onClick={handleCopyMarkdown}
                   className="w-full text-left px-3 py-2 rounded-lg hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2 text-neutral-700 dark:text-neutral-300 cursor-pointer"
                 >
-                  <Copy className="w-3.5 h-3.5" />
+                  <Copy className="w-3.5 h-3.5 text-neutral-500" />
                   <span>Copy Markdown</span>
                 </button>
               </div>
@@ -485,23 +631,23 @@ export const EditorPage: React.FC = () => {
         
         {/* Left Pane: Editor */}
         {(viewMode === 'split' || viewMode === 'write' || viewMode === 'zen') && (
-          <div className={`editor-pane-container flex flex-col h-full bg-[#18181c] text-neutral-200 transition-all ${
-            viewMode === 'split' ? 'w-full md:w-1/2 border-r border-neutral-800' : 'w-full'
+          <div className={`editor-pane-container flex flex-col h-full bg-neutral-50/70 dark:bg-[#18181c] text-neutral-800 dark:text-neutral-200 transition-colors ${
+            viewMode === 'split' ? 'w-full md:w-1/2 border-r border-neutral-200 dark:border-neutral-800' : 'w-full'
           }`}>
             
             {/* Editor Sub-header Bar */}
-            <div className="px-4 py-2 bg-[#1e1e24] border-b border-neutral-800 flex items-center justify-between text-xs text-neutral-400 select-none no-print">
-              <span className="flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <div className="px-4 py-2 bg-neutral-100/80 dark:bg-[#1e1e24] border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 select-none no-print transition-colors">
+              <span className="flex items-center gap-1.5 font-medium text-neutral-700 dark:text-neutral-300">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
                 <span>Raw Markdown</span>
               </span>
               
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setIsSlashMenuOpen(!isSlashMenuOpen)}
-                  className="px-2 py-0.5 rounded bg-neutral-800 hover:bg-neutral-700 text-amber-300 font-mono text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                  className="px-2 py-0.5 rounded bg-amber-50 dark:bg-neutral-800 hover:bg-amber-100 dark:hover:bg-neutral-700 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-transparent font-mono text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-300" />
+                  <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-300" />
                   <span>Type / for Blocks</span>
                 </button>
               </div>
@@ -512,7 +658,7 @@ export const EditorPage: React.FC = () => {
               viewMode === 'write' || viewMode === 'zen' ? 'max-w-4xl mx-auto w-full' : ''
             }`}>
               {/* Line Numbers Gutter */}
-              <div className="hidden sm:block select-none py-6 pl-4 pr-3 text-right font-mono-code text-xs text-neutral-600 space-y-0.5 overflow-hidden">
+              <div className="hidden sm:block select-none py-6 pl-4 pr-3 text-right font-mono-code text-xs text-neutral-400 dark:text-neutral-600 space-y-0.5 overflow-hidden">
                 {Array.from({ length: Math.max(lineCount, 25) }, (_, i) => (
                   <div key={i + 1} className="leading-relaxed">
                     {i + 1}
@@ -529,7 +675,7 @@ export const EditorPage: React.FC = () => {
                 onKeyUp={updateCursorPosition}
                 onClick={updateCursorPosition}
                 placeholder="Start writing here... (Type / for shortcuts)"
-                className="flex-1 w-full p-6 bg-transparent text-neutral-200 font-mono-code text-sm resize-none focus:outline-none leading-relaxed overflow-y-auto"
+                className="flex-1 w-full p-6 bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 font-mono-code text-sm resize-none focus:outline-none leading-relaxed overflow-y-auto"
                 autoFocus
               />
 
@@ -578,7 +724,9 @@ export const EditorPage: React.FC = () => {
       </div>
 
       {/* Editor Status Bar (Bottom) */}
-      <footer className="editor-status-bar h-8 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/90 px-4 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 select-none z-30 no-print">
+      <footer className={`editor-status-bar h-8 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/90 px-4 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 select-none z-30 transition-all duration-200 no-print ${
+        viewMode === 'zen' ? 'opacity-0 hover:opacity-100' : ''
+      }`}>
         
         {/* Left Stats: Cursor & Document Telemetry */}
         <div className="flex items-center gap-3">
@@ -591,6 +739,118 @@ export const EditorPage: React.FC = () => {
           <span>{charCount} chars</span>
           <span className="hidden md:inline text-neutral-300 dark:text-neutral-700">|</span>
           <span className="hidden md:inline">~{readingTime} min read</span>
+        </div>
+
+        {/* Center Actions: Typewriter Mode & Focus Sprint Timer */}
+        <div className="flex items-center gap-2">
+          {/* Typewriter Scrolling Toggle */}
+          <button
+            type="button"
+            onClick={() => {
+              const next = !isTypewriterMode;
+              setIsTypewriterMode(next);
+              setCopyToast(next ? 'Typewriter Mode Activated' : 'Typewriter Mode Off');
+              setTimeout(() => setCopyToast(null), 1500);
+            }}
+            className={`px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-[10px] font-semibold ${
+              isTypewriterMode 
+                ? 'bg-blue-600 text-white shadow-2xs' 
+                : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+            }`}
+            title="Typewriter Scrolling: Keeps active writing line centered vertically"
+          >
+            <AlignCenterVertical className="w-3 h-3" />
+            <span className="hidden sm:inline">Typewriter</span>
+          </button>
+
+          {/* Focus Sprint Timer Button */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setIsSprintPopoverOpen(!isSprintPopoverOpen)}
+              className={`px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-[10px] font-semibold ${
+                isSprintActive
+                  ? 'bg-amber-500 text-white animate-pulse shadow-2xs'
+                  : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
+              }`}
+              title="Focus Sprint Timer: 15/25/45 min writing intervals"
+            >
+              <Timer className="w-3 h-3" />
+              <span>
+                {formatSprintTime(sprintSecondsRemaining)}
+                {isSprintActive && (
+                  <span className="ml-1 opacity-90">
+                    (+{Math.max(0, wordCount - sprintStartWordCount)}w)
+                  </span>
+                )}
+              </span>
+            </button>
+
+            {/* Sprint Timer Popover */}
+            {isSprintPopoverOpen && (
+              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-3 z-50 text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-100">
+                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-1.5">
+                  <span className="font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 text-xs">
+                    <Timer className="w-3.5 h-3.5 text-amber-500" />
+                    <span>Focus Sprint</span>
+                  </span>
+                  <button 
+                    onClick={() => setIsSprintPopoverOpen(false)}
+                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
+                  >
+                    ✕
+                  </button>
+                </div>
+
+                <div className="flex items-center justify-between gap-1 text-[10px]">
+                  {[15, 25, 45].map(mins => (
+                    <button
+                      key={mins}
+                      type="button"
+                      onClick={() => handleStartSprint(mins)}
+                      className={`flex-1 py-1 rounded border text-center font-medium cursor-pointer ${
+                        sprintDuration === mins && isSprintActive
+                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-600 font-bold'
+                          : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
+                      }`}
+                    >
+                      {mins}m
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-1.5 pt-1">
+                  {!isSprintActive ? (
+                    <button
+                      type="button"
+                      onClick={() => handleStartSprint()}
+                      className="flex-1 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center gap-1 cursor-pointer text-[11px]"
+                    >
+                      <Play className="w-3 h-3 fill-white" />
+                      <span>Start Sprint</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={handlePauseSprint}
+                      className="flex-1 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 font-bold flex items-center justify-center gap-1 cursor-pointer text-[11px]"
+                    >
+                      <Pause className="w-3 h-3 fill-current" />
+                      <span>Pause</span>
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={handleResetSprint}
+                    className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
+                    title="Reset Sprint"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right Status: Storage & Quick Help */}
@@ -629,6 +889,21 @@ export const EditorPage: React.FC = () => {
         isOpen={isSwitcherOpen}
         onClose={() => setIsSwitcherOpen(false)}
         currentDocId={docId}
+      />
+
+      {/* Ground-Up Modern PDF Export Studio Modal */}
+      <ExportPdfModal
+        isOpen={isPdfStudioOpen}
+        onClose={() => setIsPdfStudioOpen(false)}
+        documentTitle={title}
+        documentContent={content}
+      />
+
+      {/* Visual Table Builder Modal */}
+      <TableBuilderModal
+        isOpen={isTableBuilderOpen}
+        onClose={() => setIsTableBuilderOpen(false)}
+        onInsert={handleInsertTableFromModal}
       />
 
     </div>

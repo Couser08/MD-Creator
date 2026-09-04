@@ -4,6 +4,8 @@ import { HomePage } from './pages/HomePage';
 import { EditorPage } from './pages/EditorPage';
 import { DocumentsPage } from './pages/DocumentsPage';
 import { AuthPage } from './pages/AuthPage';
+import { PricingPage } from './pages/PricingPage';
+import { BlogPage } from './pages/BlogPage';
 import { seedInitialDocuments } from './db/seed';
 import { useAuthStore } from './stores/useAuthStore';
 
@@ -23,6 +25,8 @@ export const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/documents" element={<DocumentsPage />} />
+        <Route path="/pricing" element={<PricingPage />} />
+        <Route path="/blog" element={<BlogPage />} />
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/editor" element={<EditorPage />} />
         <Route path="/editor/:id" element={<EditorPage />} />

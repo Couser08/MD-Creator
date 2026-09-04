@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
 @import "katex/dist/katex.min.css";
 
 @layer base {
@@ -6,6 +7,14 @@
     --font-sans: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-handwriting: 'Caveat', cursive;
     --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  *, ::after, ::before {
+    border-color: var(--color-neutral-200, #e5e5e5);
+  }
+
+  .dark *, .dark ::after, .dark ::before {
+    border-color: var(--color-neutral-800, #262626);
   }
 }
 
@@ -20,15 +29,6 @@ body {
 
 .font-mono-code {
   font-family: var(--font-mono);
-}
-
-/* Custom smooth transitions */
-* {
-  border-color: var(--color-neutral-200, #e5e5e5);
-}
-
-.dark * {
-  border-color: var(--color-neutral-800, #262626);
 }
 
 /* Subtle glassmorphism */
@@ -72,13 +72,22 @@ body {
   background: radial-gradient(circle at 50% 100%, rgba(30, 27, 75, 0.4) 0%, rgba(23, 23, 23, 0.8) 40%, rgba(10, 10, 10, 1) 100%);
 }
 
-/* Code block highlight tokens */
-.hljs-keyword, .hljs-selector-tag { color: #818cf8; font-weight: 600; }
-.hljs-string, .hljs-title { color: #34d399; }
-.hljs-comment { color: #71717a; font-style: italic; }
-.hljs-number, .hljs-literal { color: #f59e0b; }
-.hljs-attr, .hljs-variable { color: #38bdf8; }
-.hljs-function { color: #a78bfa; }
+/* Code block highlight tokens - Light Mode */
+.hljs-keyword, .hljs-selector-tag { color: #4f46e5; font-weight: 600; }
+.hljs-string, .hljs-title { color: #059669; }
+.hljs-comment { color: #6b7280; font-style: italic; }
+.hljs-number, .hljs-literal { color: #d97706; }
+.hljs-attr, .hljs-variable { color: #0284c7; }
+.hljs-function { color: #7c3aed; }
+
+/* Code block highlight tokens - Dark Mode */
+.dark .hljs-keyword, .dark .hljs-selector-tag { color: #818cf8; font-weight: 600; }
+.dark .hljs-string, .dark .hljs-title { color: #34d399; }
+.dark .hljs-comment { color: #9ca3af; font-style: italic; }
+.dark .hljs-number, .dark .hljs-literal { color: #fbbf24; }
+.dark .hljs-attr, .dark .hljs-variable { color: #38bdf8; }
+.dark .hljs-function { color: #a78bfa; }
+
 
 /* ==============================================================================
    PUBLICATION-GRADE PRINT & PDF STYLESHEET
@@ -105,7 +114,8 @@ body {
   .editor-pane-container, 
   .editor-status-bar, 
   .editor-top-nav,
-  input, textarea, button {
+  input, textarea, button,
+  [data-pdf-studio-modal="true"] {
     display: none !important;
   }
 

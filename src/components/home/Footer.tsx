@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 export const Footer: React.FC = () => {
   return (
@@ -27,6 +28,12 @@ export const Footer: React.FC = () => {
             
             {/* Nav Links */}
             <div className="flex items-center gap-5 text-xs font-medium text-neutral-500 dark:text-neutral-400">
+              <Link to="/pricing" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
+                Pricing
+              </Link>
+              <Link to="/blog" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
+                Blog
+              </Link>
               <a href="#about" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 About
               </a>
@@ -35,9 +42,6 @@ export const Footer: React.FC = () => {
               </a>
               <a href="#terms" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 Terms
-              </a>
-              <a href="#contact" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
-                Contact
               </a>
             </div>
 

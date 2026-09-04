@@ -81,14 +81,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures 
             Templates
           </button>
           <button 
-            onClick={() => handleNavClick('pricing')}
-            className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+            onClick={() => navigate('/pricing')}
+            className={`py-1 transition-colors cursor-pointer ${
+              location.pathname === '/pricing' ? 'text-neutral-900 dark:text-white font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
+            }`}
           >
             Pricing
           </button>
           <button 
-            onClick={() => handleNavClick('blog')}
-            className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
+            onClick={() => navigate('/blog')}
+            className={`py-1 transition-colors cursor-pointer ${
+              location.pathname === '/blog' ? 'text-neutral-900 dark:text-white font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
+            }`}
           >
             Blog
           </button>

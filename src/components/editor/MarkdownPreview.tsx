@@ -8,8 +8,23 @@ import { Copy, Check } from 'lucide-react';
 
 interface MarkdownPreviewProps {
   content: string;
-  onToggleTask?: (taskText: string, currentChecked: boolean) => void;
+  onToggleTask?: (taskIndex: number, currentChecked: boolean) => void;
 }
+
+// Helper to recursively extract plain text from React elements/AST
+const extractTextFromReactNode = (node: React.ReactNode): string => {
+  if (typeof node === 'string' || typeof node === 'number') {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(extractTextFromReactNode).join('');
+  }
+  if (React.isValidElement(node)) {
+    const props = node.props as { children?: React.ReactNode };
+    return props?.children ? extractTextFromReactNode(props.children) : '';
+  }
+  return '';
+};
 
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onToggleTask }) => {
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
@@ -21,7 +36,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
   };
 
   return (
-    <div className="w-full text-neutral-800 dark:text-neutral-200 leading-relaxed text-sm select-text">
+    <div data-markdown-preview="true" className="w-full text-neutral-800 dark:text-neutral-200 leading-relaxed text-sm select-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeKatex, rehypeHighlight]}
@@ -73,16 +88,20 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
           ),
 
           // Interactive Checkboxes
-          input: ({ type, checked, ...props }) => {
+          input: ({ type, checked, disabled: _disabled, node: _node, ...props }: any) => {
             if (type === 'checkbox') {
               return (
                 <input
                   type="checkbox"
-                  checked={checked}
+                  checked={Boolean(checked)}
                   onChange={(e) => {
-                    const text = e.currentTarget.parentElement?.textContent?.trim() || '';
-                    if (onToggleTask && text) {
-                      onToggleTask(text, Boolean(checked));
+                    if (onToggleTask) {
+                      const root = e.currentTarget.closest('[data-markdown-preview="true"]') || e.currentTarget.closest('.preview-pane-container');
+                      const allCheckboxes = root ? Array.from(root.querySelectorAll('input[type="checkbox"]')) : [];
+                      const taskIndex = allCheckboxes.indexOf(e.currentTarget);
+                      if (taskIndex !== -1) {
+                        onToggleTask(taskIndex, Boolean(checked));
+                      }
                     }
                   }}
                   className="w-4 h-4 rounded text-blue-600 focus:ring-0 mr-2 align-middle cursor-pointer accent-neutral-900 dark:accent-white"
@@ -128,7 +147,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
           code: ({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const isInline = !match && typeof children === 'string' && !children.includes('\n');
-            const codeString = String(children).replace(/\n$/, '');
+            const rawCode = extractTextFromReactNode(children).replace(/\n$/, '');
             const codeId = `code_${Math.random().toString(36).substr(2, 6)}`;
 
             if (isInline) {
@@ -143,20 +162,20 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
             }
 
             return (
-              <div className="relative my-4 rounded-xl overflow-hidden border border-neutral-800 bg-[#121215] shadow-md group">
+              <div className="relative my-4 rounded-xl overflow-hidden border border-neutral-200 dark:border-neutral-800 bg-neutral-50/80 dark:bg-[#121215] shadow-2xs group transition-colors">
                 {/* Code Header Bar */}
-                <div className="flex items-center justify-between px-3.5 py-1.5 bg-[#1a1a1f] border-b border-neutral-800 text-[11px] text-neutral-400 font-mono select-none">
-                  <span className="text-neutral-400 uppercase tracking-wider text-[10px]">
+                <div className="flex items-center justify-between px-3.5 py-1.5 bg-neutral-100/90 dark:bg-[#1a1a1f] border-b border-neutral-200 dark:border-neutral-800 text-[11px] text-neutral-500 dark:text-neutral-400 font-mono select-none transition-colors">
+                  <span className="text-neutral-500 dark:text-neutral-400 uppercase tracking-wider text-[10px] font-semibold">
                     {match ? match[1] : 'code'}
                   </span>
                   <button
-                    onClick={() => handleCopyCode(codeString, codeId)}
-                    className="flex items-center gap-1 hover:text-white transition-colors cursor-pointer"
+                    onClick={() => handleCopyCode(rawCode, codeId)}
+                    className="flex items-center gap-1 text-neutral-500 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white transition-colors cursor-pointer"
                   >
                     {copiedCodeId === codeId ? (
                       <>
-                        <Check className="w-3 h-3 text-emerald-400" />
-                        <span className="text-emerald-400 text-[10px]">Copied!</span>
+                        <Check className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
+                        <span className="text-emerald-600 dark:text-emerald-400 text-[10px]">Copied!</span>
                       </>
                     ) : (
                       <>
@@ -167,7 +186,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
                   </button>
                 </div>
                 {/* Code Body */}
-                <pre className="p-4 overflow-x-auto text-[12px] font-mono-code leading-relaxed text-neutral-200">
+                <pre className="p-4 overflow-x-auto text-[12px] font-mono-code leading-relaxed text-neutral-800 dark:text-neutral-200">
                   <code className={className} {...props}>
                     {children}
                   </code>

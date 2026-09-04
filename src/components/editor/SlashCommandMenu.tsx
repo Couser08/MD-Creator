@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import { 
   Heading1, 
   Heading2, 
@@ -88,8 +88,16 @@ export const COMMANDS: CommandItem[] = [
     insertSnippet: '> **Note**\n> Write your insight or callout here.\n'
   },
   {
+    id: 'table-builder',
+    title: 'Visual Table Builder',
+    description: 'Design custom rows & columns in a grid',
+    icon: Table2,
+    shortcut: '/table',
+    insertSnippet: '__ACTION_OPEN_TABLE_BUILDER__'
+  },
+  {
     id: 'table',
-    title: '3x3 Table',
+    title: '3x3 Quick Table',
     description: 'Formatted markdown table',
     icon: Table2,
     shortcut: 'table',
@@ -126,7 +134,8 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   searchQuery,
   onSelect
 }) => {
-  if (!isOpen) return null;
+  const activeItemRef = useRef<HTMLDivElement>(null);
+  const listContainerRef = useRef<HTMLDivElement>(null);
 
   const filteredCommands = COMMANDS.filter(cmd => 
     cmd.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -134,8 +143,20 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
     cmd.shortcut.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Auto-scroll the selected item into view whenever selectedIndex changes
+  useEffect(() => {
+    if (activeItemRef.current) {
+      activeItemRef.current.scrollIntoView({
+        block: 'nearest',
+        behavior: 'smooth'
+      });
+    }
+  }, [selectedIndex, filteredCommands.length]);
+
+  if (!isOpen) return null;
+
   return (
-    <div className="absolute bottom-12 left-6 z-40 w-80 max-w-[90vw] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 select-none">
+    <div data-slash-menu="true" className="absolute bottom-12 left-6 z-40 w-80 max-w-[90vw] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 select-none">
       
       {/* Menu Header with Query Indicator */}
       <div className="px-3.5 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50 dark:bg-neutral-950/40 text-xs">
@@ -148,7 +169,7 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
       </div>
 
       {/* Commands List */}
-      <div className="max-h-64 overflow-y-auto p-1.5 space-y-0.5">
+      <div ref={listContainerRef} className="max-h-64 overflow-y-auto p-1.5 space-y-0.5 scroll-smooth">
         {filteredCommands.length === 0 ? (
           <div className="p-4 text-center text-xs text-neutral-400">
             No matching blocks for "{searchQuery}"
@@ -160,6 +181,9 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
             return (
               <div
                 key={cmd.id}
+                data-slash-item="true"
+                data-selected={isSelected ? 'true' : 'false'}
+                ref={isSelected ? activeItemRef : undefined}
                 onClick={() => onSelect(cmd.insertSnippet)}
                 className={`w-full px-3 py-2 rounded-xl flex items-center justify-between transition-colors cursor-pointer ${
                   isSelected
