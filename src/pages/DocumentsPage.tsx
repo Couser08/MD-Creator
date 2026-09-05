@@ -13,15 +13,19 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
+import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
 import { useDocuments, useCreateDocument, useDeleteDocument, useTogglePin } from '../hooks/useDocuments';
 import { saveDocument } from '../db';
+import { useConfirm } from '../stores/useConfirmStore';
 
 export const DocumentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const confirm = useConfirm();
 
   const { data: documents = [], isLoading } = useDocuments(search, activeTag);
   const createDocMutation = useCreateDocument();
@@ -54,9 +58,22 @@ export const DocumentsPage: React.FC = () => {
     reader.readAsText(file);
   };
 
-  const handleDelete = (e: React.MouseEvent, id: string, title: string) => {
+  const handleDelete = async (e: React.MouseEvent, id: string, title: string) => {
     e.stopPropagation();
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
+    const confirmed = await confirm({
+      title: 'Delete Document',
+      message: (
+        <span>
+          Are you sure you want to permanently delete <strong className="text-neutral-900 dark:text-white">"{title}"</strong>?
+        </span>
+      ),
+      description: 'This document and its cached revisions will be removed from your local IndexedDB storage.',
+      confirmText: 'Delete Document',
+      cancelText: 'Keep Document',
+      variant: 'danger',
+      icon: 'trash'
+    });
+    if (confirmed) {
       deleteDocMutation.mutate(id);
     }
   };
@@ -68,7 +85,7 @@ export const DocumentsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
-      <Navbar />
+      <Navbar onOpenUpdates={() => setIsUpdatesOpen(true)} />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
@@ -188,7 +205,7 @@ export const DocumentsPage: React.FC = () => {
               <div
                 key={doc.id}
                 onClick={() => navigate(`/editor/${doc.id}`)}
-                className="group relative p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 hover:border-neutral-400 dark:hover:border-neutral-600 shadow-xs hover:shadow-md transition-all cursor-pointer flex flex-col justify-between"
+                className="group relative p-6 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800/80 hover:border-neutral-400 dark:hover:border-neutral-600 shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-200 cursor-pointer flex flex-col justify-between"
               >
                 <div>
                   {/* Card Header */}
@@ -309,7 +326,13 @@ export const DocumentsPage: React.FC = () => {
 
       </main>
 
-      <Footer />
+      <Footer onOpenUpdates={() => setIsUpdatesOpen(true)} />
+
+      {/* Crafted-with-Love Release Timeline Modal */}
+      <ProductUpdatesModal
+        isOpen={isUpdatesOpen}
+        onClose={() => setIsUpdatesOpen(false)}
+      />
     </div>
   );
 };

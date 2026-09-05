@@ -8,10 +8,12 @@ import { CtaBanner } from '../components/home/CtaBanner';
 import { Footer } from '../components/home/Footer';
 import { DemoModal } from '../components/home/DemoModal';
 import { TemplatesModal } from '../components/home/TemplatesModal';
+import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
 
 export const HomePage: React.FC = () => {
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
@@ -22,6 +24,7 @@ export const HomePage: React.FC = () => {
           const el = document.getElementById('features');
           el?.scrollIntoView({ behavior: 'smooth' });
         }}
+        onOpenUpdates={() => setIsUpdatesOpen(true)}
       />
 
       {/* Main Content Sections */}
@@ -32,8 +35,11 @@ export const HomePage: React.FC = () => {
         {/* 5-Item Highlights Strip */}
         <FeatureStrip />
 
-        {/* Bento Grid 3 Features */}
-        <BentoFeatures onExploreFeatures={() => setIsDemoOpen(true)} />
+        {/* Bento Grid 6 Flagship Features */}
+        <BentoFeatures 
+          onExploreFeatures={() => setIsDemoOpen(true)} 
+          onOpenUpdates={() => setIsUpdatesOpen(true)}
+        />
 
         {/* Testimonial Quote */}
         <Testimonial />
@@ -43,17 +49,24 @@ export const HomePage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <Footer />
+      <Footer onOpenUpdates={() => setIsUpdatesOpen(true)} />
 
       {/* Interactive Modals */}
       <DemoModal 
         isOpen={isDemoOpen} 
         onClose={() => setIsDemoOpen(false)} 
+        onOpenUpdates={() => setIsUpdatesOpen(true)}
       />
       
       <TemplatesModal 
         isOpen={isTemplatesOpen} 
         onClose={() => setIsTemplatesOpen(false)} 
+      />
+
+      {/* Crafted-with-Love Release Timeline & What's New Modal */}
+      <ProductUpdatesModal 
+        isOpen={isUpdatesOpen} 
+        onClose={() => setIsUpdatesOpen(false)} 
       />
     </div>
   );

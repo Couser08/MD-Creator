@@ -1,7 +1,23 @@
+import { useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { db, DocumentMetadata, getDocumentContent, saveDocument, createNewDocument, deleteDocument, togglePinDocument, getStorageStats } from '../db';
+import { pullCloudDocuments } from '../lib/supabase';
 
 export function useDocuments(searchQuery = '', activeTag = 'All') {
+  const queryClient = useQueryClient();
+
+  // Background cloud pull to synchronize latest cloud documents into Dexie
+  useEffect(() => {
+    let isMounted = true;
+    pullCloudDocuments().then((pulled) => {
+      if (isMounted && pulled > 0) {
+        queryClient.invalidateQueries({ queryKey: ['documents'] });
+        queryClient.invalidateQueries({ queryKey: ['storage-stats'] });
+      }
+    }).catch(console.warn);
+    return () => { isMounted = false; };
+  }, [queryClient]);
+
   return useQuery({
     queryKey: ['documents', searchQuery, activeTag],
     queryFn: async (): Promise<DocumentMetadata[]> => {

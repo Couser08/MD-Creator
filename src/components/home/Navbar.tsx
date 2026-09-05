@@ -8,9 +8,10 @@ import { ProfileDropdown } from '../auth/ProfileDropdown';
 interface NavbarProps {
   onOpenTemplates?: () => void;
   onOpenFeatures?: () => void;
+  onOpenUpdates?: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures, onOpenUpdates }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleTheme } = useThemeStore();
@@ -47,7 +48,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures 
         </div>
 
         {/* Center Navigation Links */}
-        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-neutral-600 dark:text-neutral-300">
+        <nav className="hidden md:flex items-center gap-7 text-sm font-medium text-neutral-600 dark:text-neutral-300">
           <button 
             onClick={() => navigate('/')}
             className={`relative py-1 font-semibold transition-colors cursor-pointer ${
@@ -73,6 +74,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures 
             className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer"
           >
             Features
+          </button>
+          <button 
+            onClick={() => onOpenUpdates?.()}
+            className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 group"
+          >
+            <span>Updates</span>
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-400 border border-amber-200 dark:border-amber-800/80 group-hover:scale-105 transition-transform">
+              v2.5
+            </span>
           </button>
           <button 
             onClick={() => onOpenTemplates ? onOpenTemplates() : handleNavClick('templates')}

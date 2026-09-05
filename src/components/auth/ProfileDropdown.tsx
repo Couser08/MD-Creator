@@ -13,12 +13,14 @@ import {
 import { useAuthStore } from '../../stores/useAuthStore';
 import { isSupabaseConfigured } from '../../lib/supabase';
 import { createNewDocument } from '../../db';
+import { useConfirm } from '../../stores/useConfirmStore';
 
 export const ProfileDropdown: React.FC = () => {
   const { user, signOut } = useAuthStore();
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const navigate = useNavigate();
+  const confirm = useConfirm();
   const hasSupabase = isSupabaseConfigured();
 
   // Close when clicking outside
@@ -42,8 +44,19 @@ export const ProfileDropdown: React.FC = () => {
 
   const handleSignOut = async () => {
     setIsOpen(false);
-    await signOut();
-    navigate('/');
+    const ok = await confirm({
+      title: 'Sign Out',
+      message: 'Are you sure you want to sign out of your MD Writer account?',
+      description: 'Your offline documents and cached drafts are safely preserved locally on your device in Dexie IndexedDB.',
+      confirmText: 'Sign Out',
+      cancelText: 'Stay Signed In',
+      variant: 'danger',
+      icon: 'logout'
+    });
+    if (ok) {
+      await signOut();
+      navigate('/');
+    }
   };
 
   return (

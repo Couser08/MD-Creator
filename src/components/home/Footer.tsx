@@ -1,7 +1,11 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 
-export const Footer: React.FC = () => {
+interface FooterProps {
+  onOpenUpdates?: () => void;
+}
+
+export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
   return (
     <footer className="py-12 bg-white dark:bg-neutral-950 border-t border-neutral-100 dark:border-neutral-800/80 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,6 +38,14 @@ export const Footer: React.FC = () => {
               <Link to="/blog" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 Blog
               </Link>
+              <button 
+                type="button" 
+                onClick={onOpenUpdates} 
+                className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+              >
+                <span>Changelog</span>
+                <span className="px-1 py-0.2 rounded font-mono text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold">v2.5</span>
+              </button>
               <a href="#about" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 About
               </a>

@@ -23,7 +23,10 @@ import {
   Play,
   Pause,
   RotateCcw,
-  AlignCenterVertical
+  AlignCenterVertical,
+  Trash2,
+  FileX,
+  ListTree
 } from 'lucide-react';
 import { useThemeStore } from '../stores/useThemeStore';
 import { db, saveDocument, getDocumentContent, createNewDocument, DocumentMetadata } from '../db';
@@ -33,7 +36,12 @@ import { DocumentDrawer } from '../components/editor/DocumentDrawer';
 import { DocumentSwitcherModal } from '../components/editor/DocumentSwitcherModal';
 import { ExportPdfModal } from '../components/editor/ExportPdfModal';
 import { TableBuilderModal } from '../components/editor/TableBuilderModal';
+import { WritingFxPopover } from '../components/editor/WritingFxPopover';
+import { EditorWritingFx } from '../components/editor/EditorWritingFx';
+import { DocumentOutlineDrawer, HeadingItem } from '../components/editor/DocumentOutlineDrawer';
+import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
 import { syncDocumentToSupabase, isSupabaseConfigured } from '../lib/supabase';
+import { useConfirm } from '../stores/useConfirmStore';
 
 type ViewMode = 'split' | 'write' | 'read' | 'zen';
 
@@ -41,6 +49,7 @@ export const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { isDark, toggleTheme } = useThemeStore();
+  const confirm = useConfirm();
 
   const [docId, setDocId] = useState<string>(id || 'doc-getting-started');
   const [docMetadata, setDocMetadata] = useState<DocumentMetadata | null>(null);
@@ -64,6 +73,9 @@ export const EditorPage: React.FC = () => {
   const [isPdfStudioOpen, setIsPdfStudioOpen] = useState(false);
   const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
   const [isTypewriterMode, setIsTypewriterMode] = useState(false);
+  const [isFxPopoverOpen, setIsFxPopoverOpen] = useState(false);
+  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
+  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
 
   // Focus Sprint Timer
   const [isSprintActive, setIsSprintActive] = useState(false);
@@ -230,6 +242,21 @@ export const EditorPage: React.FC = () => {
     }, 50);
   };
 
+  // Jump to heading line from Document Outline
+  const handleSelectHeading = (heading: HeadingItem) => {
+    if (!textareaRef.current) return;
+    const lineHeight = 24;
+    textareaRef.current.scrollTop = Math.max(0, heading.lineIndex * lineHeight - 60);
+    const lines = content.split('\n');
+    let charOffset = 0;
+    for (let i = 0; i < heading.lineIndex; i++) {
+      charOffset += lines[i].length + 1;
+    }
+    textareaRef.current.focus();
+    textareaRef.current.setSelectionRange(charOffset, charOffset + (lines[heading.lineIndex]?.length || 0));
+    updateCursorPosition();
+  };
+
   // Handle content changes
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const val = e.target.value;
@@ -385,6 +412,56 @@ export const EditorPage: React.FC = () => {
     setTimeout(() => setCopyToast(null), 2000);
   };
 
+  const handleDeleteCurrentDoc = async () => {
+    setIsDrawerOpen(false);
+    setIsExportMenuOpen(false);
+    const ok = await confirm({
+      title: 'Delete Current Document',
+      message: (
+        <span>
+          Are you sure you want to permanently delete <strong className="text-neutral-900 dark:text-white">"{title}"</strong>?
+        </span>
+      ),
+      description: 'This document and its local revisions will be erased from your IndexedDB storage.',
+      confirmText: 'Delete Document',
+      cancelText: 'Keep Document',
+      variant: 'danger',
+      icon: 'trash'
+    });
+
+    if (ok) {
+      await db.documents.delete(docId);
+      await db.document_cache.delete(docId);
+      navigate('/documents');
+    }
+  };
+
+  const handleClearContent = async () => {
+    setIsDrawerOpen(false);
+    setIsExportMenuOpen(false);
+    const ok = await confirm({
+      title: 'Clear Document Content',
+      message: (
+        <span>
+          Are you sure you want to clear all text in <strong className="text-neutral-900 dark:text-white">"{title}"</strong>?
+        </span>
+      ),
+      description: 'The editor textarea will be emptied immediately and auto-saved to IndexedDB.',
+      confirmText: 'Clear Content',
+      cancelText: 'Keep My Writing',
+      variant: 'warning',
+      icon: 'clear'
+    });
+
+    if (ok) {
+      setContent('');
+      setIsSaved(false);
+      executeSave('', title);
+      setCopyToast('Document content cleared');
+      setTimeout(() => setCopyToast(null), 1500);
+    }
+  };
+
   // Calculations for status bar
   const lineCount = content.split('\n').length;
   const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
@@ -442,6 +519,15 @@ export const EditorPage: React.FC = () => {
           >
             <FolderOpen className="w-3.5 h-3.5 text-neutral-400" />
             <span className="hidden md:inline">Open...</span>
+          </button>
+
+          <button
+            onClick={() => setIsOutlineOpen(true)}
+            className="px-2 py-1 rounded-lg border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-700 dark:text-neutral-300 flex items-center gap-1 cursor-pointer"
+            title="Document Outline / Table of Contents"
+          >
+            <ListTree className="w-3.5 h-3.5 text-purple-500" />
+            <span className="hidden md:inline">Outline</span>
           </button>
 
           <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800"></div>
@@ -552,6 +638,20 @@ export const EditorPage: React.FC = () => {
             <span className="hidden sm:inline">Table</span>
           </button>
 
+          {/* Writing FX & Cursor Studio Trigger */}
+          <button
+            onClick={() => setIsFxPopoverOpen(!isFxPopoverOpen)}
+            className={`px-2.5 py-1.5 rounded-lg border text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs transition-all ${
+              isFxPopoverOpen
+                ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-transparent shadow-md scale-102'
+                : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-700 text-neutral-700 dark:text-neutral-200'
+            }`}
+            title="Writing FX & Cursor Studio (Custom Cursors, Typing Effects)"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+            <span className="hidden sm:inline">Effects</span>
+          </button>
+
           {/* Export Dropdown Menu */}
           <div className="relative">
             <button
@@ -597,6 +697,24 @@ export const EditorPage: React.FC = () => {
                 >
                   <Copy className="w-3.5 h-3.5 text-neutral-500" />
                   <span>Copy Markdown</span>
+                </button>
+
+                <div className="border-t border-neutral-100 dark:border-neutral-800 my-1"></div>
+
+                <button
+                  onClick={handleClearContent}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 text-amber-600 dark:text-amber-400 cursor-pointer"
+                >
+                  <FileX className="w-3.5 h-3.5" />
+                  <span>Clear Content...</span>
+                </button>
+
+                <button
+                  onClick={handleDeleteCurrentDoc}
+                  className="w-full text-left px-3 py-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 text-red-600 dark:text-red-400 cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Delete Document...</span>
                 </button>
               </div>
             )}
@@ -856,6 +974,15 @@ export const EditorPage: React.FC = () => {
         {/* Right Status: Storage & Quick Help */}
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setIsUpdatesOpen(true)}
+            className="hover:text-neutral-900 dark:hover:text-white cursor-pointer transition-colors flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20"
+            title="What's New & Release Timeline (v2.5)"
+          >
+            <Sparkles className="w-3 h-3" />
+            <span>v2.5 Updates</span>
+          </button>
+          <span className="text-neutral-300 dark:text-neutral-700">|</span>
+          <button
             onClick={() => setIsSwitcherOpen(true)}
             className="hover:text-neutral-900 dark:hover:text-white cursor-pointer transition-colors flex items-center gap-1"
           >
@@ -882,6 +1009,8 @@ export const EditorPage: React.FC = () => {
         wordCount={wordCount}
         charCount={charCount}
         lineCount={lineCount}
+        onDeleteDocument={handleDeleteCurrentDoc}
+        onClearContent={handleClearContent}
       />
 
       {/* Document Switcher Modal */}
@@ -904,6 +1033,29 @@ export const EditorPage: React.FC = () => {
         isOpen={isTableBuilderOpen}
         onClose={() => setIsTableBuilderOpen(false)}
         onInsert={handleInsertTableFromModal}
+      />
+
+      {/* Writing FX & Custom Cursor Studio Popover */}
+      <WritingFxPopover
+        isOpen={isFxPopoverOpen}
+        onClose={() => setIsFxPopoverOpen(false)}
+      />
+
+      {/* 60FPS Hardware-Accelerated Editor Typing FX Overlay */}
+      <EditorWritingFx textareaRef={textareaRef} />
+
+      {/* Interactive Document Outline / TOC Drawer */}
+      <DocumentOutlineDrawer
+        isOpen={isOutlineOpen}
+        onClose={() => setIsOutlineOpen(false)}
+        content={content}
+        onSelectHeading={handleSelectHeading}
+      />
+
+      {/* Crafted-With-Love Product Updates & Release Timeline Modal */}
+      <ProductUpdatesModal
+        isOpen={isUpdatesOpen}
+        onClose={() => setIsUpdatesOpen(false)}
       />
 
     </div>

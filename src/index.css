@@ -88,6 +88,63 @@ body {
 .dark .hljs-attr, .dark .hljs-variable { color: #38bdf8; }
 .dark .hljs-function { color: #a78bfa; }
 
+/* ==============================================================================
+   60FPS HARDWARE-ACCELERATED ANIMATION SYSTEM
+   Utilizes only composited GPU properties (transform, opacity, filter)
+   Ensures zero main-thread blockage and ultra-low load on older devices
+   ============================================================================== */
+.hardware-accelerated {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+@keyframes floatGentle {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-5px); }
+}
+
+@keyframes pulseGlow {
+  0%, 100% { opacity: 0.9; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.03); }
+}
+
+@keyframes caretTerminalBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+@keyframes caretNeonPulse {
+  0%, 100% { box-shadow: 0 0 10px rgba(6, 182, 212, 0.8), 0 0 20px rgba(6, 182, 212, 0.4); }
+  50% { box-shadow: 0 0 4px rgba(6, 182, 212, 0.4), 0 0 8px rgba(6, 182, 212, 0.2); }
+}
+
+@keyframes caretAmberCrt {
+  0%, 100% { opacity: 1; filter: brightness(1.1); }
+  50% { opacity: 0.2; filter: brightness(0.7); }
+}
+
+@keyframes particleSparks {
+  0% { transform: translate(0, 0) scale(1); opacity: 1; }
+  100% { transform: translate(var(--dx, 10px), var(--dy, -15px)) scale(0); opacity: 0; }
+}
+
+@keyframes matrixFlicker {
+  0%, 100% { opacity: 0.85; filter: drop-shadow(0 0 6px #22c55e); }
+  50% { opacity: 1; filter: drop-shadow(0 0 12px #22c55e); }
+}
+
+.animate-float {
+  animation: floatGentle 4s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-matrix {
+  animation: matrixFlicker 1.8s ease-in-out infinite;
+}
 
 /* ==============================================================================
    PUBLICATION-GRADE PRINT & PDF STYLESHEET

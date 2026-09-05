@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { supabase, isSupabaseConfigured, checkEmailExists, syncAllDocuments } from '../lib/supabase';
 
 export interface UserProfile {
   id: string;
@@ -21,6 +21,7 @@ interface AuthState {
 }
 
 const DEMO_USER_STORAGE_KEY = 'md_writer_demo_user';
+const LOCAL_USERS_STORAGE_KEY = 'md_writer_registered_accounts';
 
 export const useAuthStore = create<AuthState>((set) => ({
   user: null,
@@ -56,6 +57,9 @@ export const useAuthStore = create<AuthState>((set) => ({
             },
             isLoading: false
           });
+
+          // Run background cloud sync on app start
+          syncAllDocuments().catch(console.warn);
           return;
         }
       } catch (err) {
@@ -68,33 +72,44 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signIn: async (email: string, password: string) => {
     set({ isLoading: true, error: null });
+    const cleanEmail = email.trim().toLowerCase();
 
     // If Supabase is configured
     if (isSupabaseConfigured() && supabase) {
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
       if (error) {
-        set({ error: error.message, isLoading: false });
-        return { success: false, error: error.message };
+        const friendlyMessage = error.message.toLowerCase().includes('invalid login credentials')
+          ? 'Invalid email or password. Please verify your credentials or sign up.'
+          : error.message;
+        set({ error: friendlyMessage, isLoading: false });
+        return { success: false, error: friendlyMessage };
       }
 
       if (data.user) {
         const profile: UserProfile = {
           id: data.user.id,
-          email: data.user.email || email,
-          displayName: data.user.user_metadata?.full_name || email.split('@')[0],
+          email: data.user.email || cleanEmail,
+          displayName: data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
           avatarUrl: data.user.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           isDemoUser: false
         };
         set({ user: profile, isLoading: false });
+
+        // Pull latest cloud documents on sign in
+        syncAllDocuments().catch(console.warn);
         return { success: true };
       }
     }
 
-    // Fallback if Supabase not configured: simulate demo sign in
+    // Fallback if Supabase not configured: verify against local accounts registry
+    const rawAccounts = localStorage.getItem(LOCAL_USERS_STORAGE_KEY);
+    const localAccounts: Array<{ email: string; name: string }> = rawAccounts ? JSON.parse(rawAccounts) : [];
+    const found = localAccounts.find(acc => acc.email === cleanEmail);
+
     const demoUser: UserProfile = {
       id: `usr_${Date.now()}`,
-      email,
-      displayName: email.split('@')[0] || 'Rahul Mehta',
+      email: cleanEmail,
+      displayName: found ? found.name : cleanEmail.split('@')[0] || 'Rahul Mehta',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       isDemoUser: true
     };
@@ -105,42 +120,76 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   signUp: async (email: string, password: string, name?: string) => {
     set({ isLoading: true, error: null });
+    const cleanEmail = email.trim().toLowerCase();
 
     if (isSupabaseConfigured() && supabase) {
+      // 1. Explicit check if email already exists in profiles
+      const exists = await checkEmailExists(cleanEmail);
+      if (exists) {
+        const msg = 'An account with this email address already exists. Please sign in instead.';
+        set({ error: msg, isLoading: false });
+        return { success: false, error: msg };
+      }
+
+      // 2. Perform Supabase auth registration
       const { data, error } = await supabase.auth.signUp({
-        email,
+        email: cleanEmail,
         password,
         options: {
           data: {
-            full_name: name || email.split('@')[0],
+            full_name: name || cleanEmail.split('@')[0],
             avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
           }
         }
       });
 
       if (error) {
-        set({ error: error.message, isLoading: false });
-        return { success: false, error: error.message };
+        const errorMsg = error.message.toLowerCase().includes('already registered')
+          ? 'An account with this email address already exists. Please sign in instead.'
+          : error.message;
+        set({ error: errorMsg, isLoading: false });
+        return { success: false, error: errorMsg };
+      }
+
+      // If Supabase has email confirmation enabled, identities array is empty when user already exists
+      if (data.user?.identities && data.user.identities.length === 0) {
+        const msg = 'An account with this email address already exists. Please sign in instead.';
+        set({ error: msg, isLoading: false });
+        return { success: false, error: msg };
       }
 
       if (data.user) {
         const profile: UserProfile = {
           id: data.user.id,
-          email: data.user.email || email,
-          displayName: name || email.split('@')[0],
+          email: data.user.email || cleanEmail,
+          displayName: name || cleanEmail.split('@')[0],
           avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
           isDemoUser: false
         };
         set({ user: profile, isLoading: false });
+
+        // Sync documents immediately on signup
+        syncAllDocuments().catch(console.warn);
         return { success: true };
       }
     }
 
-    // Fallback demo signup
+    // Fallback demo signup: check local registered accounts
+    const rawAccounts = localStorage.getItem(LOCAL_USERS_STORAGE_KEY);
+    const localAccounts: Array<{ email: string; name: string }> = rawAccounts ? JSON.parse(rawAccounts) : [];
+    if (localAccounts.some(acc => acc.email === cleanEmail)) {
+      const msg = 'An account with this email address already exists. Please sign in instead.';
+      set({ error: msg, isLoading: false });
+      return { success: false, error: msg };
+    }
+
+    localAccounts.push({ email: cleanEmail, name: name || cleanEmail.split('@')[0] });
+    localStorage.setItem(LOCAL_USERS_STORAGE_KEY, JSON.stringify(localAccounts));
+
     const demoUser: UserProfile = {
       id: `usr_${Date.now()}`,
-      email,
-      displayName: name || email.split('@')[0] || 'Rahul Mehta',
+      email: cleanEmail,
+      displayName: name || cleanEmail.split('@')[0] || 'Rahul Mehta',
       avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
       isDemoUser: true
     };

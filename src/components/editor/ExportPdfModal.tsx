@@ -208,6 +208,20 @@ export const ExportPdfModal: React.FC<ExportPdfModalProps> = ({
             padding-top: 24pt !important;
             padding-bottom: 24pt !important;
           }
+          #pdf-render-body {
+            min-height: 88vh !important;
+            display: flex !important;
+            flex-direction: column !important;
+            justify-content: space-between !important;
+          }
+          #pdf-render-body > div.prose {
+            flex: 1 1 auto !important;
+          }
+          .pdf-running-footer {
+            margin-top: auto !important;
+            padding-top: 10pt !important;
+            border-top: 1px solid #e5e7eb !important;
+          }
           #pdf-render-toc {
             page-break-after: always !important;
             break-after: page !important;
@@ -719,7 +733,7 @@ export const ExportPdfModal: React.FC<ExportPdfModalProps> = ({
               {/* MAIN CONTENT SHEET */}
               <div 
                 id="pdf-render-body"
-                className={`bg-white text-neutral-900 rounded-sm shadow-xl p-8 sm:p-14 min-h-[1050px] relative border border-neutral-200 ${currentFontFamilyCss}`}
+                className={`bg-white text-neutral-900 rounded-sm shadow-xl p-8 sm:p-14 min-h-[1050px] flex flex-col justify-between relative border border-neutral-200 ${currentFontFamilyCss}`}
               >
                 {/* Watermark in Canvas */}
                 {watermarkText && (
@@ -732,7 +746,7 @@ export const ExportPdfModal: React.FC<ExportPdfModalProps> = ({
 
                 {/* Running Header */}
                 {includePageNumbers && (
-                  <div className="flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-100 pb-3 mb-8 font-mono">
+                  <div className="pdf-running-header flex items-center justify-between text-[11px] text-neutral-400 border-b border-neutral-100 pb-3 mb-8 font-mono">
                     <span>{documentTitle}</span>
                     <span>{new Date().toLocaleDateString()}</span>
                   </div>
@@ -740,7 +754,7 @@ export const ExportPdfModal: React.FC<ExportPdfModalProps> = ({
 
                 {/* Document Body Rendered */}
                 <div 
-                  className={`prose prose-neutral max-w-none ${
+                  className={`prose prose-neutral max-w-none flex-1 ${
                     preset === 'technical' ? 'prose-headings:font-mono' : ''
                   }`}
                   style={{
@@ -754,7 +768,7 @@ export const ExportPdfModal: React.FC<ExportPdfModalProps> = ({
 
                 {/* Running Footer */}
                 {includePageNumbers && (
-                  <div className="flex items-center justify-between text-[10px] text-neutral-400 border-t border-neutral-100 pt-4 mt-12 font-mono">
+                  <div className="pdf-running-footer flex items-center justify-between text-[10px] text-neutral-400 border-t border-neutral-100 pt-4 mt-auto font-mono">
                     <span>Published with MD Creator</span>
                     <span>Page 1 of 1</span>
                   </div>

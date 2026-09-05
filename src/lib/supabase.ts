@@ -1,5 +1,5 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
-import { DocumentMetadata } from '../db';
+import { db, DocumentMetadata } from '../db';
 
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
@@ -19,22 +19,49 @@ export const supabase: SupabaseClient | null = isSupabaseConfigured()
   : null;
 
 /**
+ * Checks if an email is already registered in Supabase public.profiles table.
+ */
+export async function checkEmailExists(email: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('email')
+      .ilike('email', email.trim().toLowerCase())
+      .maybeSingle();
+
+    if (error) {
+      console.warn('[Supabase Auth] Email check warning:', error.message);
+      return false;
+    }
+    return Boolean(data);
+  } catch (err) {
+    console.warn('[Supabase Auth] Failed to check email existence:', err);
+    return false;
+  }
+}
+
+/**
  * Pushes document metadata and full content to Supabase in the background.
  */
 export async function syncDocumentToSupabase(doc: DocumentMetadata, content: string): Promise<boolean> {
   if (!supabase) return false;
 
   try {
-    // 1. Upsert document metadata
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id || null;
+
+    // 1. Upsert document metadata with user_id
     const { error: metaError } = await supabase.from('documents').upsert({
       id: doc.id,
+      user_id: userId,
       title: doc.title,
       snippet: doc.snippet,
-      tags: doc.tags,
-      is_pinned: doc.isPinned,
-      is_favorite: doc.isFavorite,
-      word_count: doc.wordCount,
-      size_bytes: doc.sizeBytes,
+      tags: doc.tags || [],
+      is_pinned: doc.isPinned || false,
+      is_favorite: doc.isFavorite || false,
+      word_count: doc.wordCount || 0,
+      size_bytes: doc.sizeBytes || 0,
       updated_at: new Date(doc.updatedAt).toISOString()
     });
 
@@ -59,6 +86,113 @@ export async function syncDocumentToSupabase(doc: DocumentMetadata, content: str
   } catch (err) {
     console.warn('[Supabase Sync] Failed to sync:', err);
     return false;
+  }
+}
+
+/**
+ * Pulls all documents belonging to the authenticated user from Supabase into Dexie.
+ */
+export async function pullCloudDocuments(): Promise<number> {
+  if (!supabase) return 0;
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return 0;
+
+    const { data: cloudDocs, error: docError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .order('updated_at', { ascending: false });
+
+    if (docError || !cloudDocs) {
+      console.warn('[Supabase Pull] Error fetching documents:', docError?.message);
+      return 0;
+    }
+
+    let pulledCount = 0;
+
+    for (const cloudDoc of cloudDocs) {
+      const localDoc = await db.documents.get(cloudDoc.id);
+      const cloudUpdated = new Date(cloudDoc.updated_at).getTime();
+
+      // If missing locally or cloud is newer, pull full content
+      if (!localDoc || cloudUpdated > localDoc.updatedAt) {
+        const { data: contentData } = await supabase
+          .from('document_contents')
+          .select('content')
+          .eq('id', cloudDoc.id)
+          .maybeSingle();
+
+        const content = contentData?.content || '';
+
+        // Save metadata to Dexie
+        await db.documents.put({
+          id: cloudDoc.id,
+          title: cloudDoc.title,
+          snippet: cloudDoc.snippet || '',
+          tags: cloudDoc.tags || [],
+          createdAt: new Date(cloudDoc.created_at).getTime(),
+          updatedAt: cloudUpdated,
+          lastOpenedAt: cloudDoc.last_opened_at ? new Date(cloudDoc.last_opened_at).getTime() : Date.now(),
+          openCount: 1,
+          isPinned: cloudDoc.is_pinned || false,
+          isFavorite: cloudDoc.is_favorite || false,
+          wordCount: cloudDoc.word_count || 0,
+          sizeBytes: cloudDoc.size_bytes || 0
+        });
+
+        // Save content to Dexie cache
+        await db.document_cache.put({
+          id: cloudDoc.id,
+          content,
+          cachedAt: Date.now()
+        });
+
+        pulledCount++;
+      }
+    }
+
+    return pulledCount;
+  } catch (err) {
+    console.warn('[Supabase Pull] Failed to pull documents:', err);
+    return 0;
+  }
+}
+
+/**
+ * Performs bi-directional synchronization between Dexie (IndexedDB) and Supabase Cloud.
+ */
+export async function syncAllDocuments(): Promise<{ pulled: number; pushed: number }> {
+  if (!supabase) return { pulled: 0, pushed: 0 };
+
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) return { pulled: 0, pushed: 0 };
+
+    // 1. Pull latest cloud documents first
+    const pulled = await pullCloudDocuments();
+
+    // 2. Push any local documents that don't exist in cloud or are newer
+    const localDocs = await db.documents.toArray();
+    let pushed = 0;
+
+    for (const localDoc of localDocs) {
+      // Don't sync default demo starter document unless modified
+      if (localDoc.id === 'doc-getting-started' && localDoc.tags.includes('Guide')) {
+        continue;
+      }
+
+      const cached = await db.document_cache.get(localDoc.id);
+      const content = cached?.content || '';
+      const synced = await syncDocumentToSupabase(localDoc, content);
+      if (synced) pushed++;
+    }
+
+    return { pulled, pushed };
+  } catch (err) {
+    console.warn('[Supabase SyncAll] Sync failed:', err);
+    return { pulled: 0, pushed: 0 };
   }
 }
 

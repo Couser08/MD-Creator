@@ -8,6 +8,7 @@ import { PricingPage } from './pages/PricingPage';
 import { BlogPage } from './pages/BlogPage';
 import { seedInitialDocuments } from './db/seed';
 import { useAuthStore } from './stores/useAuthStore';
+import { GlobalConfirmDialog } from './components/common/GlobalConfirmDialog';
 
 export const App: React.FC = () => {
   const { checkAuth } = useAuthStore();
@@ -22,6 +23,7 @@ export const App: React.FC = () => {
 
   return (
     <BrowserRouter>
+      <GlobalConfirmDialog />
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/documents" element={<DocumentsPage />} />
