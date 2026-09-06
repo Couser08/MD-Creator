@@ -38,14 +38,24 @@ export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
               <Link to="/blog" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 Blog
               </Link>
-              <button 
-                type="button" 
-                onClick={onOpenUpdates} 
-                className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
-              >
-                <span>Changelog</span>
-                <span className="px-1 py-0.2 rounded font-mono text-[9px] bg-neutral-100 dark:bg-neutral-800 text-neutral-700 dark:text-neutral-300 font-bold">v2.5</span>
-              </button>
+              {onOpenUpdates ? (
+                <button 
+                  type="button" 
+                  onClick={onOpenUpdates} 
+                  className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>Changelog</span>
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.0</span>
+                </button>
+              ) : (
+                <Link 
+                  to="/updates" 
+                  className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
+                >
+                  <span>Changelog</span>
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.0</span>
+                </Link>
+              )}
               <a href="#about" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 About
               </a>
