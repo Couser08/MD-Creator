@@ -167,9 +167,17 @@ export const COMMANDS: CommandItem[] = [
     insertSnippet: '\n| Column 1 | Column 2 | Column 3 |\n| :--- | :--- | :--- |\n| Alpha | Feature A | Active |\n| Beta | Feature B | Ready |\n| Gamma | Feature C | Done |\n\n'
   },
   {
+    id: 'math-studio',
+    title: 'KaTeX Formula Studio',
+    description: 'Predefined formulas library (Calculus, Algebra, Physics, Stats)',
+    icon: Sigma,
+    shortcut: '/math',
+    insertSnippet: '__ACTION_OPEN_MATH_STUDIO__'
+  },
+  {
     id: 'math',
-    title: 'Math Formula (KaTeX)',
-    description: 'LaTeX mathematical equation',
+    title: 'Raw Math Formula (KaTeX)',
+    description: 'Insert raw LaTeX equation block',
     icon: Sigma,
     shortcut: '$$',
     insertSnippet: '$$\nE = mc^2\n$$\n'

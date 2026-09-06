@@ -16,6 +16,7 @@ import {
   ChevronRight 
 } from 'lucide-react';
 import { MermaidBlock } from './MermaidBlock';
+import { replaceEmojisInReactNode } from '../../utils/appleEmoji';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -37,12 +38,17 @@ const extractTextFromReactNode = (node: React.ReactNode): string => {
   return '';
 };
 
-// Alert Callout configuration for GitHub-style blockquotes
 interface AlertCalloutConfig {
   type: 'note' | 'tip' | 'warning' | 'important' | 'caution';
   title: string;
   icon: React.ElementType;
+  borderColor: string;
+  backgroundColor: string;
+  darkBackgroundColor: string;
+  badgeBg: string;
+  badgeColor: string;
   containerClass: string;
+  badgeClass: string;
   titleClass: string;
   iconClass: string;
 }
@@ -52,57 +58,102 @@ const ALERT_CONFIGS: Record<string, AlertCalloutConfig> = {
     type: 'note',
     title: 'Note',
     icon: Info,
-    containerClass: 'border-l-4 border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 text-blue-950 dark:text-blue-200',
-    titleClass: 'text-blue-700 dark:text-blue-400 font-bold',
+    borderColor: '#2563eb',
+    backgroundColor: 'rgba(37, 99, 235, 0.08)',
+    darkBackgroundColor: 'rgba(30, 58, 138, 0.25)',
+    badgeBg: 'rgba(37, 99, 235, 0.15)',
+    badgeColor: '#1d4ed8',
+    containerClass: 'callout-alert-note text-blue-950 dark:text-blue-100',
+    badgeClass: 'border border-blue-300/80 dark:border-blue-700/60',
+    titleClass: 'text-blue-800 dark:text-blue-300 font-bold',
     iconClass: 'text-blue-600 dark:text-blue-400'
   },
   tip: {
     type: 'tip',
     title: 'Tip',
     icon: Lightbulb,
-    containerClass: 'border-l-4 border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200',
-    titleClass: 'text-emerald-700 dark:text-emerald-400 font-bold',
+    borderColor: '#059669',
+    backgroundColor: 'rgba(5, 150, 105, 0.08)',
+    darkBackgroundColor: 'rgba(6, 78, 59, 0.25)',
+    badgeBg: 'rgba(5, 150, 105, 0.15)',
+    badgeColor: '#047857',
+    containerClass: 'callout-alert-tip text-emerald-950 dark:text-emerald-100',
+    badgeClass: 'border border-emerald-300/80 dark:border-emerald-700/60',
+    titleClass: 'text-emerald-800 dark:text-emerald-300 font-bold',
     iconClass: 'text-emerald-600 dark:text-emerald-400'
   },
   warning: {
     type: 'warning',
     title: 'Warning',
     icon: AlertTriangle,
-    containerClass: 'border-l-4 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200',
-    titleClass: 'text-amber-700 dark:text-amber-400 font-bold',
+    borderColor: '#d97706',
+    backgroundColor: 'rgba(217, 119, 6, 0.08)',
+    darkBackgroundColor: 'rgba(120, 53, 15, 0.25)',
+    badgeBg: 'rgba(217, 119, 6, 0.15)',
+    badgeColor: '#b45309',
+    containerClass: 'callout-alert-warning text-amber-950 dark:text-amber-100',
+    badgeClass: 'border border-amber-300/80 dark:border-amber-700/60',
+    titleClass: 'text-amber-800 dark:text-amber-300 font-bold',
     iconClass: 'text-amber-600 dark:text-amber-400'
   },
   important: {
     type: 'important',
     title: 'Important',
     icon: Sparkles,
-    containerClass: 'border-l-4 border-purple-500 bg-purple-50/70 dark:bg-purple-950/30 text-purple-950 dark:text-purple-200',
-    titleClass: 'text-purple-700 dark:text-purple-400 font-bold',
+    borderColor: '#7c3aed',
+    backgroundColor: 'rgba(124, 58, 237, 0.08)',
+    darkBackgroundColor: 'rgba(76, 29, 149, 0.25)',
+    badgeBg: 'rgba(124, 58, 237, 0.15)',
+    badgeColor: '#6d28d9',
+    containerClass: 'callout-alert-important text-purple-950 dark:text-purple-100',
+    badgeClass: 'border border-purple-300/80 dark:border-purple-700/60',
+    titleClass: 'text-purple-800 dark:text-purple-300 font-bold',
     iconClass: 'text-purple-600 dark:text-purple-400'
   },
   caution: {
     type: 'caution',
     title: 'Caution',
     icon: ShieldAlert,
-    containerClass: 'border-l-4 border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 text-rose-950 dark:text-rose-200',
-    titleClass: 'text-rose-700 dark:text-rose-400 font-bold',
+    borderColor: '#e11d48',
+    backgroundColor: 'rgba(225, 29, 72, 0.08)',
+    darkBackgroundColor: 'rgba(136, 19, 55, 0.25)',
+    badgeBg: 'rgba(225, 29, 72, 0.15)',
+    badgeColor: '#be123c',
+    containerClass: 'callout-alert-caution text-rose-950 dark:text-rose-100',
+    badgeClass: 'border border-rose-300/80 dark:border-rose-700/60',
+    titleClass: 'text-rose-800 dark:text-rose-300 font-bold',
     iconClass: 'text-rose-600 dark:text-rose-400'
   }
 };
 
 /**
- * Inspects blockquote children to see if it starts with [!NOTE], [!TIP], etc.
+ * Inspects blockquote children to find [!NOTE], [!TIP], [!WARNING], [!IMPORTANT], [!CAUTION]
+ * Tolerates leading whitespace, newlines, and nested elements.
  */
 const extractAlertInfo = (children: React.ReactNode): { config: AlertCalloutConfig; content: React.ReactNode } | null => {
   const childrenArray = React.Children.toArray(children);
   if (childrenArray.length === 0) return null;
 
-  const firstChild = childrenArray[0];
-  if (!React.isValidElement(firstChild)) return null;
+  // Find the first meaningful child (skipping empty whitespace / newlines)
+  let targetChildIndex = -1;
+  for (let i = 0; i < childrenArray.length; i++) {
+    const c = childrenArray[i];
+    if (React.isValidElement(c)) {
+      targetChildIndex = i;
+      break;
+    }
+    if (typeof c === 'string' && c.trim().length > 0) {
+      targetChildIndex = i;
+      break;
+    }
+  }
 
-  const innerProps = (firstChild as any).props;
-  const innerChildren = innerProps?.children;
-  const innerText = extractTextFromReactNode(innerChildren).trimStart();
+  if (targetChildIndex === -1) return null;
+
+  const targetChild = childrenArray[targetChildIndex];
+  const innerText = React.isValidElement(targetChild)
+    ? extractTextFromReactNode((targetChild.props as any)?.children).trimStart()
+    : String(targetChild).trimStart();
 
   const match = innerText.match(/^\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]/i);
   if (!match) return null;
@@ -111,19 +162,24 @@ const extractAlertInfo = (children: React.ReactNode): { config: AlertCalloutConf
   const config = ALERT_CONFIGS[alertType];
   if (!config) return null;
 
-  // Strip "[!NOTE]" prefix from first paragraph
+  // Strip "[!NOTE]" prefix from text
   const textWithoutMarker = innerText.replace(/^\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*/i, '');
 
-  let remainingFirstChild: React.ReactNode = null;
+  let remainingTargetChild: React.ReactNode = null;
   if (textWithoutMarker.length > 0) {
-    remainingFirstChild = React.cloneElement(firstChild as React.ReactElement<any>, {
-      children: textWithoutMarker
-    });
+    if (React.isValidElement(targetChild)) {
+      remainingTargetChild = React.cloneElement(targetChild as React.ReactElement<any>, {
+        children: textWithoutMarker
+      });
+    } else {
+      remainingTargetChild = textWithoutMarker;
+    }
   }
 
   const remainingChildren = [
-    remainingFirstChild,
-    ...childrenArray.slice(1)
+    ...childrenArray.slice(0, targetChildIndex),
+    remainingTargetChild,
+    ...childrenArray.slice(targetChildIndex + 1)
   ].filter(Boolean);
 
   return { config, content: remainingChildren };
@@ -147,29 +203,29 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
           // Headings
           h1: ({ children }) => (
             <h1 className="text-2xl sm:text-3xl font-black text-neutral-950 dark:text-white mt-6 mb-3 tracking-tight pb-1.5 border-b border-neutral-100 dark:border-neutral-800">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </h1>
           ),
           h2: ({ children }) => (
             <h2 className="text-xl sm:text-2xl font-bold text-neutral-900 dark:text-neutral-100 mt-5 mb-2.5 tracking-tight">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </h2>
           ),
           h3: ({ children }) => (
             <h3 className="text-lg font-bold text-neutral-900 dark:text-neutral-100 mt-4 mb-2">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </h3>
           ),
           h4: ({ children }) => (
             <h4 className="text-base font-semibold text-neutral-900 dark:text-neutral-200 mt-3 mb-1.5">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </h4>
           ),
 
           // Paragraphs
           p: ({ children }) => (
             <p className="mb-3 text-neutral-700 dark:text-neutral-300 leading-relaxed">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </p>
           ),
 
@@ -186,7 +242,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
           ),
           li: ({ children }) => (
             <li className="text-neutral-700 dark:text-neutral-300 leading-relaxed">
-              {children}
+              {replaceEmojisInReactNode(children)}
             </li>
           ),
 
@@ -224,15 +280,29 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
               const IconComp = config.icon;
 
               return (
-                <div className={`my-4 p-4 rounded-r-2xl shadow-2xs ${config.containerClass}`}>
-                  <div className="flex items-center gap-2 mb-1.5 select-none">
-                    <IconComp className={`w-4 h-4 shrink-0 ${config.iconClass}`} />
-                    <span className={`text-xs uppercase tracking-wider font-mono ${config.titleClass}`}>
-                      {config.title}
-                    </span>
+                <div 
+                  style={{
+                    borderLeftWidth: '4px',
+                    borderLeftStyle: 'solid',
+                    borderLeftColor: config.borderColor,
+                    backgroundColor: config.backgroundColor,
+                  }}
+                  className={`my-4 p-4 rounded-r-2xl border-y border-r border-neutral-200/50 dark:border-neutral-800/50 shadow-xs transition-all ${config.containerClass}`}
+                >
+                  <div className="flex items-center gap-2 mb-2 select-none">
+                    <div 
+                      style={{
+                        backgroundColor: config.badgeBg,
+                        color: config.badgeColor,
+                      }}
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold font-mono tracking-wider uppercase shadow-2xs ${config.badgeClass}`}
+                    >
+                      <IconComp className={`w-3.5 h-3.5 shrink-0 ${config.iconClass}`} />
+                      <span>{config.title}</span>
+                    </div>
                   </div>
-                  <div className="text-xs sm:text-sm leading-relaxed pl-6">
-                    {alertContent}
+                  <div className="text-xs sm:text-sm leading-relaxed font-normal opacity-95">
+                    {replaceEmojisInReactNode(alertContent)}
                   </div>
                 </div>
               );
@@ -241,7 +311,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
             // Standard Quote
             return (
               <blockquote className="border-l-4 border-neutral-300 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-900/40 p-4 my-3.5 rounded-r-2xl text-neutral-700 dark:text-neutral-300 italic shadow-2xs">
-                {children}
+                {replaceEmojisInReactNode(children)}
               </blockquote>
             );
           },

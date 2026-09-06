@@ -23,6 +23,34 @@ body {
   overflow-x: hidden;
 }
 
+/* GitHub/Obsidian Callout Alerts - Specific Left Accent Borders */
+.callout-alert-note {
+  border-left-color: #2563eb !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+.callout-alert-tip {
+  border-left-color: #059669 !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+.callout-alert-warning {
+  border-left-color: #d97706 !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+.callout-alert-important {
+  border-left-color: #7c3aed !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+.callout-alert-caution {
+  border-left-color: #e11d48 !important;
+  border-left-width: 4px !important;
+  border-left-style: solid !important;
+}
+
+
 .font-handwriting {
   font-family: var(--font-handwriting);
 }

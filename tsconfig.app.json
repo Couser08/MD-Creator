@@ -21,7 +21,7 @@
     "noFallthroughCasesInSwitch": true,
 
     /* Vite client types */
-    "types": ["vite/client"],
+    "types": ["vite/client", "vite-plugin-pwa/client"],
 
     /* Path Aliases */
     "baseUrl": ".",

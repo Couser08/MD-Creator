@@ -4,6 +4,7 @@ import { Sun, Moon, FolderOpen } from 'lucide-react';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { useAuthStore } from '../../stores/useAuthStore';
 import { ProfileDropdown } from '../auth/ProfileDropdown';
+import { PwaInstallButton } from '../common/PwaInstallButton';
 
 interface NavbarProps {
   onOpenTemplates?: () => void;
@@ -76,12 +77,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures,
             Features
           </button>
           <button 
-            onClick={() => onOpenUpdates?.()}
-            className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1.5 group"
+            onClick={() => onOpenUpdates ? onOpenUpdates() : navigate('/updates')}
+            className={`transition-colors cursor-pointer flex items-center gap-1.5 group ${
+              location.pathname === '/updates' ? 'text-neutral-900 dark:text-white font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
+            }`}
           >
             <span>Updates</span>
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/80 dark:text-amber-400 border border-amber-200 dark:border-amber-800/80 group-hover:scale-105 transition-transform">
-              v2.5
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-mono font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800/80 group-hover:scale-105 transition-transform">
+              v3.0
             </span>
           </button>
           <button 
@@ -109,7 +112,10 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures,
         </nav>
 
         {/* Right Action Utilities */}
-        <div className="flex items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {/* PWA Install Button */}
+          <PwaInstallButton variant="navbar" />
+
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}

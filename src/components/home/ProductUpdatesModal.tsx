@@ -3,17 +3,11 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { 
   Sparkles, 
   X, 
-  Heart, 
   Search, 
-  CheckCircle2, 
-  Cpu, 
-  Printer, 
-  ListTree, 
-  Cloud, 
-  PenTool, 
   ArrowRight,
-  GitCommit,
-  Layers
+  Layers,
+  Heart,
+  CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
@@ -22,130 +16,8 @@ interface ProductUpdatesModalProps {
   onClose: () => void;
 }
 
-type UpdateCategory = 'all' | 'engine' | 'publishing' | 'sync' | 'ux';
-
-interface UpdateMilestone {
-  version: string;
-  isLatest?: boolean;
-  date: string;
-  title: string;
-  category: UpdateCategory;
-  categoryLabel: string;
-  summary: string;
-  icon: React.ElementType;
-  iconColor: string;
-  iconBg: string;
-  highlights: {
-    type: 'new' | 'improved' | 'perf' | 'fix';
-    text: string;
-  }[];
-}
-
-const MILESTONES: UpdateMilestone[] = [
-  {
-    version: 'v2.5',
-    isLatest: true,
-    date: 'September 2026',
-    title: 'Game-Developer 60–144FPS Canvas Engine & Idempotent Cloud Sync',
-    category: 'engine',
-    categoryLabel: 'Performance & Engine',
-    summary: 'A complete architectural rebuild of the writing effect pipeline. Replaced DOM particle rendering with a hardware-accelerated 2D canvas layer and persistent mirror singleton, eliminating all input lag during rapid typing.',
-    icon: Cpu,
-    iconColor: 'text-amber-500 dark:text-amber-400',
-    iconBg: 'bg-amber-50 dark:bg-amber-950/50 border-amber-200/60 dark:border-amber-900/50',
-    highlights: [
-      { type: 'perf', text: 'Hardware-Accelerated 2D Canvas Layer: Full-screen High-DPI canvas overlay for 60–144FPS particle physics with 0 DOM nodes mounted per keypress.' },
-      { type: 'perf', text: 'Zero-Allocation Particle Pool: Pre-allocated pool of 256 particle structures, entirely eliminating Garbage Collection pauses.' },
-      { type: 'perf', text: 'Persistent Mirror Singleton: Caret measurement now completes in < 0.05ms without adding/removing DOM elements or forcing synchronous reflows.' },
-      { type: 'perf', text: 'Direct GPU-Composited Cursor: Visual carets positioned via direct translate3d transform, bypassing React render cycles for native 0ms typing latency.' },
-      { type: 'new', text: 'Self-Sleeping RAF Loop: Animation loop automatically sleeps when particles fade, dropping CPU & GPU usage to 0.00% when idle.' },
-      { type: 'fix', text: 'Idempotent Supabase SQL & Pre-signup Email Validation: Added checkEmailExists() and robust DROP POLICY IF EXISTS scripts to eliminate error 42710.' }
-    ]
-  },
-  {
-    version: 'v2.4',
-    date: 'August 2026',
-    title: 'PDF Publishing Studio v2 & Running Footer Geometry',
-    category: 'publishing',
-    categoryLabel: 'Vector Publishing',
-    summary: 'Transformed document export into an isolated high-resolution vector publishing studio with curated typographic themes, standalone cover pages, auto TOC, and pinned running footers.',
-    icon: Printer,
-    iconColor: 'text-blue-500 dark:text-blue-400',
-    iconBg: 'bg-blue-50 dark:bg-blue-950/50 border-blue-200/60 dark:border-blue-900/50',
-    highlights: [
-      { type: 'new', text: '5 Curated Typographic Presets: Editorial (Sans), Technical RFC (Mono), Academic (Serif), Corporate, and Swiss Minimalist.' },
-      { type: 'new', text: 'Standalone Cover Pages & Table of Contents: Automatically extracts H1–H3 headings with dotted leader tabs.' },
-      { type: 'fix', text: 'Pinned Footer Geometry: Screen preview and print engine updated with flexbox column layout and min-height 88vh to pin running footers firmly to page bottom.' },
-      { type: 'improved', text: 'Isolated Print Engine: Renders through a hidden sandboxed iframe to preserve document-perfect print typography with 0 UI chrome.' }
-    ]
-  },
-  {
-    version: 'v2.3',
-    date: 'July 2026',
-    title: 'Interactive Outline Navigator & Centralized Safety Confirmation',
-    category: 'ux',
-    categoryLabel: 'UI & Safety',
-    summary: 'Introduced the Document Outline drawer for effortless navigation across long-form documents, paired with a global promise-based confirmation system.',
-    icon: ListTree,
-    iconColor: 'text-purple-500 dark:text-purple-400',
-    iconBg: 'bg-purple-50 dark:bg-purple-950/50 border-purple-200/60 dark:border-purple-900/50',
-    highlights: [
-      { type: 'new', text: 'Real-time Outline Drawer: Parses # through ###### Markdown headings with hierarchy indentations and 1-click jump-to-line navigation.' },
-      { type: 'new', text: 'Global Confirmation Architecture: Promise-based useConfirmStore modal with safety auto-focus on Cancel for destructive actions.' },
-      { type: 'improved', text: 'Card Hover Physics: Smooth spring lift and elevation shadows on the library document grid.' },
-      { type: 'new', text: 'Writing FX Studio Popover: Interactive effects playground with real-time typewriter loop demo and keystroke testing sandbox.' }
-    ]
-  },
-  {
-    version: 'v2.2',
-    date: 'June 2026',
-    title: 'Bi-Directional Supabase Cloud Sync & Multi-Device Hub',
-    category: 'sync',
-    categoryLabel: 'Cloud & Offline',
-    summary: 'Bridges offline-first Dexie IndexedDB with real-time Supabase cloud sync, enabling seamless cross-device writing and instant recovery.',
-    icon: Cloud,
-    iconColor: 'text-emerald-500 dark:text-emerald-400',
-    iconBg: 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200/60 dark:border-emerald-900/50',
-    highlights: [
-      { type: 'new', text: 'Inbound Cloud Pull: Automatically queries Supabase on startup to populate local Dexie with documents written on other devices.' },
-      { type: 'new', text: 'Sync All Engine: Pushes offline drafts to Supabase in the background upon login or reconnect.' },
-      { type: 'improved', text: 'Row-Level Security (RLS): All documents and revisions isolated per user_id with cryptographically verified auth tokens.' }
-    ]
-  },
-  {
-    version: 'v2.0',
-    date: 'April 2026',
-    title: 'Design System Overhaul, Slash Commands & Typewriter Mode',
-    category: 'ux',
-    categoryLabel: 'Core Experience',
-    summary: 'A ground-up modern UI overhaul introducing keyboard-centric slash commands, vertical typewriter centering, and sprint interval timers.',
-    icon: PenTool,
-    iconColor: 'text-indigo-500 dark:text-indigo-400',
-    iconBg: 'bg-indigo-50 dark:bg-indigo-950/50 border-indigo-200/60 dark:border-indigo-900/50',
-    highlights: [
-      { type: 'new', text: 'Slash Commands (/): Instant menu for headings, code blocks, checklists, quotes, and visual table builder.' },
-      { type: 'new', text: 'Typewriter Scrolling: Centers the active line vertically so your gaze never drops to the bottom of the screen.' },
-      { type: 'new', text: 'Focus Sprint Timer: 15, 25, and 45-minute writing sprint modes with live word velocity tracking.' },
-      { type: 'improved', text: 'Tailwind CSS v4 & Framer Motion v13 Design Tokens: Pure modern minimalism with fluid dark mode.' }
-    ]
-  },
-  {
-    version: 'v1.0',
-    date: 'January 2026',
-    title: 'Foundational Release: The Offline-First Markdown Architecture',
-    category: 'engine',
-    categoryLabel: 'Foundation',
-    summary: 'The original launch of MD Writer: instant offline persistence, KaTeX mathematical typesetting, and distraction-free writing modes.',
-    icon: GitCommit,
-    iconColor: 'text-neutral-500 dark:text-neutral-400',
-    iconBg: 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700',
-    highlights: [
-      { type: 'new', text: 'Zero-Latency Dexie IndexedDB: Client-side database caching thousands of documents with instant search.' },
-      { type: 'new', text: 'Split, Write, Read, & Zen Modes: Flexible workspaces adapting to drafting, reading, and pure flow.' },
-      { type: 'new', text: 'KaTeX & Syntax Highlighting: Mathematical formulas and code syntax highlighting out of the box.' }
-    ]
-  }
-];
+import { MILESTONES, UpdateCategory } from '../../data/productUpdates';
+import { renderWithAppleEmojis } from '../../utils/appleEmoji';
 
 export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -214,7 +86,7 @@ export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen
                     What's New & Release Timeline
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-xs">
-                    v2.5 Live
+                    v3.0 Live
                   </span>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">
@@ -251,7 +123,7 @@ export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen
                       : 'text-neutral-600 dark:text-neutral-400 hover:bg-neutral-100 dark:hover:bg-neutral-800'
                   }`}
                 >
-                  {cat.label}
+                  {renderWithAppleEmojis(cat.label)}
                 </button>
               ))}
             </div>
@@ -327,10 +199,10 @@ export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen
 
                         {/* Title & Summary */}
                         <h3 className="text-base sm:text-lg font-bold text-neutral-950 dark:text-white mb-2 leading-snug">
-                          {milestone.title}
+                          {renderWithAppleEmojis(milestone.title)}
                         </h3>
                         <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-300 leading-relaxed mb-4">
-                          {milestone.summary}
+                          {renderWithAppleEmojis(milestone.summary)}
                         </p>
 
                         {/* Highlights List */}
@@ -340,7 +212,7 @@ export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen
                               <span className={`inline-flex items-center px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider shrink-0 border mt-0.5 ${getBadgeStyle(h.type)}`}>
                                 {getBadgeLabel(h.type)}
                               </span>
-                              <span className="leading-relaxed">{h.text}</span>
+                              <span className="leading-relaxed">{renderWithAppleEmojis(h.text)}</span>
                             </div>
                           ))}
                         </div>

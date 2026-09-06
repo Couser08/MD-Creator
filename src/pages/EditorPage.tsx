@@ -1,543 +1,181 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { 
-  ArrowLeft, 
-  Sun, 
-  Moon, 
-  Download, 
-  Columns, 
-  PenTool,
-  Eye,
-  Maximize2,
-  Minimize2,
-  FileText, 
-  CheckCircle2,
-  Info,
-  ChevronDown,
-  Sparkles,
-  Copy,
-  FolderOpen,
-  Table2,
-  Timer,
-  Play,
-  Pause,
-  RotateCcw,
-  AlignCenterVertical,
-  Trash2,
-  FileX,
-  ListTree,
-  Sliders,
-  History,
-  LayoutTemplate
-} from 'lucide-react';
-import { useThemeStore } from '../stores/useThemeStore';
-import { db, saveDocument, getDocumentContent, createNewDocument, createRevisionSnapshot, DocumentMetadata } from '../db';
-import { MarkdownPreview } from '../components/editor/MarkdownPreview';
-import { SlashCommandMenu, COMMANDS } from '../components/editor/SlashCommandMenu';
-import { DocumentDrawer } from '../components/editor/DocumentDrawer';
-import { DocumentSwitcherModal } from '../components/editor/DocumentSwitcherModal';
-import { ExportPdfModal } from '../components/editor/ExportPdfModal';
-import { TableBuilderModal } from '../components/editor/TableBuilderModal';
-import { WritingFxPopover } from '../components/editor/WritingFxPopover';
-import { EditorWritingFx } from '../components/editor/EditorWritingFx';
-import { DocumentOutlineDrawer, HeadingItem } from '../components/editor/DocumentOutlineDrawer';
-import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
-import { TemplatesModal } from '../components/home/TemplatesModal';
-import { RevisionHistoryModal } from '../components/editor/RevisionHistoryModal';
-import { MarkdownTemplate } from '../data/templates';
-import { syncDocumentToSupabase, isSupabaseConfigured } from '../lib/supabase';
-import { useConfirm } from '../stores/useConfirmStore';
-
-type ViewMode = 'split' | 'write' | 'read' | 'zen';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { useParams } from 'react-router-dom';
+import { CheckCircle2 } from 'lucide-react';
+import { ViewMode, CursorPosition } from '../features/editor/types';
+import { useEditorModals } from '../features/editor/hooks/useEditorModals';
+import { useEditorDocument } from '../features/editor/hooks/useEditorDocument';
+import { useFocusSprint } from '../features/editor/hooks/useFocusSprint';
+import { useSlashCommands } from '../features/editor/hooks/useSlashCommands';
+import { EditorHeader } from '../features/editor/components/EditorHeader';
+import { EditorWorkspace } from '../features/editor/components/EditorWorkspace';
+import { EditorStatusBar } from '../features/editor/components/EditorStatusBar';
+import { EditorModalsContainer } from '../features/editor/components/EditorModalsContainer';
+import { HeadingItem } from '../components/editor/DocumentOutlineDrawer';
 
 export const EditorPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
-  const { isDark, toggleTheme } = useThemeStore();
-  const confirm = useConfirm();
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const [docId, setDocId] = useState<string>(id || 'doc-getting-started');
-  const [docMetadata, setDocMetadata] = useState<DocumentMetadata | null>(null);
-  const [title, setTitle] = useState('Getting Started.md');
-  const [content, setContent] = useState('');
-  
-  // UI States
+  // View mode and feedback toasts
   const [viewMode, setViewMode] = useState<ViewMode>('split');
-  const [isSaved, setIsSaved] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [isSwitcherOpen, setIsSwitcherOpen] = useState(false);
-  const [isSlashMenuOpen, setIsSlashMenuOpen] = useState(false);
-  const [slashQuery, setSlashQuery] = useState('');
-  const [slashSelectedIndex, setSlashSelectedIndex] = useState(0);
-  const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const [cursorPos, setCursorPos] = useState<CursorPosition>({ line: 1, col: 1 });
   const [copyToast, setCopyToast] = useState<string | null>(null);
 
-  // Free & Pro Features: PDF Studio, Table Builder, Typewriter, Sprint Timer, Tools & Snapshots
-  const [isPdfStudioOpen, setIsPdfStudioOpen] = useState(false);
-  const [isTableBuilderOpen, setIsTableBuilderOpen] = useState(false);
-  const [isTypewriterMode, setIsTypewriterMode] = useState(false);
-  const [isFxPopoverOpen, setIsFxPopoverOpen] = useState(false);
-  const [isOutlineOpen, setIsOutlineOpen] = useState(false);
-  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
-  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
-  const [isRevisionsOpen, setIsRevisionsOpen] = useState(false);
-  const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
+  const showToast = useCallback((msg: string, durationMs = 2500) => {
+    setCopyToast(msg);
+    setTimeout(() => setCopyToast(null), durationMs);
+  }, []);
 
-  // Focus Sprint Timer
-  const [isSprintActive, setIsSprintActive] = useState(false);
-  const [sprintDuration, setSprintDuration] = useState(25); // minutes
-  const [sprintSecondsRemaining, setSprintSecondsRemaining] = useState(25 * 60);
-  const [sprintStartWordCount, setSprintStartWordCount] = useState(0);
-  const [isSprintPopoverOpen, setIsSprintPopoverOpen] = useState(false);
+  // Modal visibility states
+  const modals = useEditorModals();
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const autoSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const snapshotTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastSnapshotContentRef = useRef<string>('');
+  // Document persistence and sync hook
+  const doc = useEditorDocument({
+    routeDocId: id,
+    onToast: showToast,
+    textareaRef,
+  });
 
-  // Load document from Dexie on mount or ID change
-  useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      let targetId = id;
-      if (!targetId) {
-        const firstDoc = await db.documents.toCollection().first();
-        if (firstDoc) {
-          targetId = firstDoc.id;
-        } else {
-          targetId = await createNewDocument('Getting Started.md');
-        }
-      }
+  // Focus sprint timer hook
+  const sprint = useFocusSprint({
+    content: doc.content,
+    onSprintComplete: (wordsWritten) => {
+      showToast(`🎉 Focus Sprint Completed! You wrote ${wordsWritten} words!`, 4000);
+    },
+  });
 
-      const meta = await db.documents.get(targetId);
-      const text = await getDocumentContent(targetId);
-
-      if (isMounted) {
-        setDocId(targetId);
-        setDocMetadata(meta || null);
-        setTitle(meta?.title || 'Untitled.md');
-        setContent(text);
-        lastSnapshotContentRef.current = text;
-        setIsSaved(true);
-      }
-    }
-    load();
-    return () => { isMounted = false; };
-  }, [id]);
-
-  // Global Keyboard Shortcuts (Ctrl+O for File Switcher, Ctrl+S for Save, Esc to exit Zen Mode)
-  useEffect(() => {
-    const handleGlobalKeyDown = (e: KeyboardEvent) => {
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
-        e.preventDefault();
-        setIsSwitcherOpen(true);
-      }
-      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
-        e.preventDefault();
-        executeSave(content, title);
-      }
-      if (e.key === 'Escape' && viewMode === 'zen' && !isSlashMenuOpen && !isSwitcherOpen && !isDrawerOpen && !isExportMenuOpen) {
-        setViewMode('split');
-      }
-    };
-    window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
-  }, [content, title, viewMode, isSlashMenuOpen, isSwitcherOpen, isDrawerOpen, isExportMenuOpen]);
-
-  // Reset slash selection when query changes
-  useEffect(() => {
-    setSlashSelectedIndex(0);
-  }, [slashQuery]);
-
-
-  // Track cursor position & apply Typewriter scrolling
-  const updateCursorPosition = () => {
+  // Track cursor position and perform Typewriter vertical centering
+  const updateCursorPosition = useCallback(() => {
     if (!textareaRef.current) return;
     const text = textareaRef.current.value.substring(0, textareaRef.current.selectionStart);
     const lines = text.split('\n');
     const currentLine = lines.length;
     setCursorPos({
       line: currentLine,
-      col: lines[lines.length - 1].length + 1
+      col: lines[lines.length - 1].length + 1,
     });
 
-    if (isTypewriterMode) {
+    if (modals.isTypewriterMode) {
       const lineHeight = 24;
-      const targetScroll = (currentLine - 1) * lineHeight - (textareaRef.current.clientHeight / 2) + lineHeight;
+      const targetScroll =
+        (currentLine - 1) * lineHeight - textareaRef.current.clientHeight / 2 + lineHeight;
       textareaRef.current.scrollTop = Math.max(0, targetScroll);
     }
-  };
+  }, [modals.isTypewriterMode]);
 
-  // Perform Save to Dexie and background Supabase
-  const executeSave = useCallback(async (newContent: string, newTitle: string) => {
-    setIsSaving(true);
-    await saveDocument(docId, newTitle, newContent, docMetadata?.tags);
-    const updatedMeta = await db.documents.get(docId);
-    if (updatedMeta) {
-      setDocMetadata(updatedMeta);
-      if (isSupabaseConfigured()) {
-        syncDocumentToSupabase(updatedMeta, newContent).catch(console.warn);
-      }
-    }
-    setIsSaving(false);
-    setIsSaved(true);
-  }, [docId, docMetadata?.tags]);
+  // Slash commands palette and shortcut injection hook
+  const slash = useSlashCommands({
+    content: doc.content,
+    setContent: doc.setContent,
+    executeSave: doc.executeSave,
+    title: doc.title,
+    textareaRef,
+    updateCursorPosition,
+    onOpenTableBuilder: () => modals.setIsTableBuilderOpen(true),
+    onOpenTemplates: () => modals.setIsTemplatesOpen(true),
+    onOpenMathStudio: () => modals.setIsMathStudioOpen(true),
+  });
 
-  // Sprint Timer countdown & word delta tracking
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (isSprintActive) {
-      interval = setInterval(() => {
-        setSprintSecondsRemaining(prev => {
-          if (prev <= 1) {
-            setIsSprintActive(false);
-            const wordsWritten = Math.max(0, (content.trim() ? content.trim().split(/\s+/).length : 0) - sprintStartWordCount);
-            setCopyToast(`🎉 Focus Sprint Completed! You wrote ${wordsWritten} words!`);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isSprintActive, content, sprintStartWordCount]);
-
-  const handleStartSprint = (minutes?: number) => {
-    const mins = minutes || sprintDuration;
-    const currentWords = content.trim() ? content.trim().split(/\s+/).length : 0;
-    setSprintDuration(mins);
-    setSprintSecondsRemaining(mins * 60);
-    setSprintStartWordCount(currentWords);
-    setIsSprintActive(true);
-    setIsSprintPopoverOpen(false);
-  };
-
-  const handlePauseSprint = () => {
-    setIsSprintActive(false);
-  };
-
-  const handleResetSprint = () => {
-    setIsSprintActive(false);
-    setSprintSecondsRemaining(sprintDuration * 60);
-  };
-
-  const formatSprintTime = (seconds: number) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m}:${s < 10 ? '0' : ''}${s}`;
-  };
-
-  // Insert Table from Table Builder modal
-  const handleInsertTableFromModal = (tableMarkdown: string) => {
-    if (!textareaRef.current) {
-      const next = content + '\n\n' + tableMarkdown;
-      setContent(next);
-      executeSave(next, title);
-      return;
-    }
-    const cursor = textareaRef.current.selectionStart;
-    const before = content.substring(0, cursor);
-    const after = content.substring(cursor);
-    const next = before + '\n\n' + tableMarkdown + '\n' + after;
-    setContent(next);
-    setIsSaved(false);
-    executeSave(next, title);
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-      }
-    }, 50);
-  };
-
-  // Jump to heading line from Document Outline
-  const handleSelectHeading = (heading: HeadingItem) => {
-    if (!textareaRef.current) return;
-    const lineHeight = 24;
-    textareaRef.current.scrollTop = Math.max(0, heading.lineIndex * lineHeight - 60);
-    const lines = content.split('\n');
-    let charOffset = 0;
-    for (let i = 0; i < heading.lineIndex; i++) {
-      charOffset += lines[i].length + 1;
-    }
-    textareaRef.current.focus();
-    textareaRef.current.setSelectionRange(charOffset, charOffset + (lines[heading.lineIndex]?.length || 0));
-    updateCursorPosition();
-  };
-
-  // Handle content changes
-  const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const val = e.target.value;
-    setContent(val);
-    setIsSaved(false);
-    updateCursorPosition();
-
-    // Slash trigger check
-    const cursor = e.target.selectionStart;
-    const textBeforeCursor = val.substring(0, cursor);
-    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-
-    if (lastSlashIndex !== -1) {
-      const charBeforeSlash = lastSlashIndex > 0 ? textBeforeCursor[lastSlashIndex - 1] : '\n';
-      const textAfterSlash = textBeforeCursor.substring(lastSlashIndex + 1);
-
-      if ((charBeforeSlash === '\n' || charBeforeSlash === ' ') && !textAfterSlash.includes(' ') && !textAfterSlash.includes('\n')) {
-        setIsSlashMenuOpen(true);
-        setSlashQuery(textAfterSlash);
+  // Insert formula snippet from KaTeX Studio at cursor
+  const handleInsertFormulaAtCursor = useCallback(
+    (latexSnippet: string) => {
+      if (!textareaRef.current) {
+        const next = doc.content + '\n\n' + latexSnippet + '\n';
+        doc.setContent(next);
+        doc.executeSave(next, doc.title);
+        showToast('✨ Inserted KaTeX formula');
         return;
       }
-    }
-
-    setIsSlashMenuOpen(false);
-    setSlashQuery('');
-
-    // Auto-save debounced (1.5 seconds)
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      executeSave(val, title);
-    }, 1500);
-
-    // Debounced Auto-snapshot (30 seconds idle)
-    if (snapshotTimerRef.current) clearTimeout(snapshotTimerRef.current);
-    snapshotTimerRef.current = setTimeout(() => {
-      if (val !== lastSnapshotContentRef.current && val.trim()) {
-        lastSnapshotContentRef.current = val;
-        createRevisionSnapshot(docId, title, val, 'Auto-snapshot');
-      }
-    }, 30000);
-  };
-
-  // Filtered commands list
-  const filteredCommands = COMMANDS.filter(cmd => 
-    cmd.title.toLowerCase().includes(slashQuery.toLowerCase()) ||
-    cmd.description.toLowerCase().includes(slashQuery.toLowerCase()) ||
-    cmd.shortcut.toLowerCase().includes(slashQuery.toLowerCase())
+      const cursor = textareaRef.current.selectionStart;
+      const before = doc.content.substring(0, cursor);
+      const after = doc.content.substring(cursor);
+      const sepBefore = before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+      const sepAfter = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+      const next = before + sepBefore + latexSnippet + sepAfter + after;
+      doc.setContent(next);
+      doc.executeSave(next, doc.title);
+      showToast('✨ Inserted KaTeX formula');
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+    },
+    [doc, showToast]
   );
 
-  // Insert slash command snippet at cursor
-  const handleInsertSnippet = (snippet: string) => {
-    if (!textareaRef.current) return;
-    const cursor = textareaRef.current.selectionStart;
-    const textBeforeCursor = content.substring(0, cursor);
-    const afterCursor = content.substring(cursor);
+  // Content change handler combining slash trigger detection and debounced auto-save
+  const handleContentChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const val = e.target.value;
+      doc.setContent(val);
+      updateCursorPosition();
+      slash.checkSlashTrigger(val, e.target.selectionStart);
+      doc.queueAutoSave(val, doc.title);
+    },
+    [doc, updateCursorPosition, slash]
+  );
 
-    const lastSlashIndex = textBeforeCursor.lastIndexOf('/');
-    const cleanBefore = lastSlashIndex !== -1 ? textBeforeCursor.substring(0, lastSlashIndex) : textBeforeCursor;
-
-    if (snippet === '__ACTION_OPEN_TABLE_BUILDER__') {
-      setContent(cleanBefore + afterCursor);
-      setIsSlashMenuOpen(false);
-      setSlashQuery('');
-      setIsTableBuilderOpen(true);
-      return;
-    }
-
-    if (snippet === '__ACTION_OPEN_TEMPLATES__') {
-      setContent(cleanBefore + afterCursor);
-      setIsSlashMenuOpen(false);
-      setSlashQuery('');
-      setIsTemplatesOpen(true);
-      return;
-    }
-
-    const nextContent = cleanBefore + snippet + afterCursor;
-    setContent(nextContent);
-    setIsSlashMenuOpen(false);
-    setSlashQuery('');
-    setSlashSelectedIndex(0);
-    setIsSaved(false);
-
-    // Re-focus and update cursor
-    setTimeout(() => {
-      if (textareaRef.current) {
-        textareaRef.current.focus();
-        const newPos = cleanBefore.length + snippet.length;
-        textareaRef.current.setSelectionRange(newPos, newPos);
-        updateCursorPosition();
+  // Jump to heading from Document Outline
+  const handleSelectHeading = useCallback(
+    (heading: HeadingItem) => {
+      if (!textareaRef.current) return;
+      const lineHeight = 24;
+      textareaRef.current.scrollTop = Math.max(0, heading.lineIndex * lineHeight - 60);
+      const lines = doc.content.split('\n');
+      let charOffset = 0;
+      for (let i = 0; i < heading.lineIndex; i++) {
+        charOffset += lines[i].length + 1;
       }
-    }, 20);
+      textareaRef.current.focus();
+      textareaRef.current.setSelectionRange(
+        charOffset,
+        charOffset + (lines[heading.lineIndex]?.length || 0)
+      );
+      updateCursorPosition();
+    },
+    [doc.content, updateCursorPosition]
+  );
 
-    executeSave(nextContent, title);
-  };
-
-  // Handle Template Selection in active Editor
-  const handleSelectTemplate = (template: MarkdownTemplate, action: 'insert' | 'replace') => {
-    if (action === 'replace') {
-      if (content.trim()) {
-        createRevisionSnapshot(docId, title, content, 'Pre-Template Backup');
-      }
-      setContent(template.content);
-      if (title === 'Getting Started.md' || title === 'Untitled Document' || title === 'Untitled.md') {
-        setTitle(template.title);
-      }
-      setIsSaved(false);
-      executeSave(template.content, title);
-      setCopyToast(`✨ Loaded "${template.title}" template`);
-      setTimeout(() => setCopyToast(null), 3000);
-    } else {
-      const cursor = textareaRef.current?.selectionStart ?? content.length;
-      const before = content.substring(0, cursor);
-      const after = content.substring(cursor);
-      const sep = before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
-      const newContent = before + sep + template.content + '\n\n' + after;
-      setContent(newContent);
-      setIsSaved(false);
-      executeSave(newContent, title);
-      setCopyToast(`✨ Inserted "${template.title}" snippet at cursor`);
-      setTimeout(() => setCopyToast(null), 3000);
-    }
-  };
-
-  // Handle Restore Revision
-  const handleRestoreRevision = (restoredContent: string) => {
-    setContent(restoredContent);
-    setIsSaved(false);
-    executeSave(restoredContent, title);
-    setCopyToast('✨ Restored document from checkpoint!');
-    setTimeout(() => setCopyToast(null), 3000);
-  };
-
-  // Textarea KeyDown handler for arrow-key navigation in slash palette
-  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (isSlashMenuOpen && filteredCommands.length > 0) {
-      if (e.key === 'ArrowDown') {
+  // Global Keyboard Shortcuts (Ctrl+O, Ctrl+S, Esc)
+  useEffect(() => {
+    const handleGlobalKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'o') {
         e.preventDefault();
-        setSlashSelectedIndex(prev => (prev + 1) % filteredCommands.length);
-        return;
+        modals.setIsSwitcherOpen(true);
       }
-      if (e.key === 'ArrowUp') {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
         e.preventDefault();
-        setSlashSelectedIndex(prev => (prev - 1 + filteredCommands.length) % filteredCommands.length);
-        return;
+        doc.executeSave(doc.content, doc.title);
       }
-      if (e.key === 'Enter' || e.key === 'Tab') {
-        e.preventDefault();
-        const selected = filteredCommands[slashSelectedIndex % filteredCommands.length];
-        if (selected) {
-          handleInsertSnippet(selected.insertSnippet);
-        }
-        return;
+      if (
+        e.key === 'Escape' &&
+        viewMode === 'zen' &&
+        !slash.isSlashMenuOpen &&
+        !modals.isSwitcherOpen &&
+        !modals.isDrawerOpen &&
+        !modals.isExportMenuOpen
+      ) {
+        setViewMode('split');
       }
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        setIsSlashMenuOpen(false);
-        setSlashQuery('');
-        return;
-      }
-    }
-  };
+    };
+    window.addEventListener('keydown', handleGlobalKeyDown);
+    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+  }, [doc, viewMode, slash.isSlashMenuOpen, modals]);
 
-  // Toggle interactive checklist item in markdown by task index
-  const handleToggleTask = (taskIndex: number, _currentChecked: boolean) => {
-    let counter = 0;
-    const taskRegex = /^(\s*[-*+]\s*\[)([ xX])(\]\s.*)$/gm;
-
-    const nextContent = content.replace(taskRegex, (match, prefix, checkChar, suffix) => {
-      if (counter === taskIndex) {
-        counter++;
-        const nextChar = checkChar.trim().toLowerCase() === 'x' ? ' ' : 'x';
-        return `${prefix}${nextChar}${suffix}`;
-      }
-      counter++;
-      return match;
-    });
-
-    setContent(nextContent);
-    setIsSaved(false);
-    executeSave(nextContent, title);
-  };
-
-
-  // Update tags from drawer
-  const handleUpdateTags = async (newTags: string[]) => {
-    if (!docMetadata) return;
-    await db.documents.update(docId, { tags: newTags });
-    setDocMetadata({ ...docMetadata, tags: newTags });
-  };
-
-  // Export functions
-  const handleExportMd = () => {
-    const blob = new Blob([content], { type: 'text/markdown;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = title.endsWith('.md') ? title : `${title}.md`;
-    a.click();
-    URL.revokeObjectURL(url);
-    setIsExportMenuOpen(false);
-  };
-
-  const handleCopyMarkdown = () => {
-    navigator.clipboard.writeText(content);
-    setCopyToast('Copied Markdown!');
-    setIsExportMenuOpen(false);
-    setTimeout(() => setCopyToast(null), 2000);
-  };
-
-  const handleDeleteCurrentDoc = async () => {
-    setIsDrawerOpen(false);
-    setIsExportMenuOpen(false);
-    const ok = await confirm({
-      title: 'Delete Current Document',
-      message: (
-        <span>
-          Are you sure you want to permanently delete <strong className="text-neutral-900 dark:text-white">"{title}"</strong>?
-        </span>
-      ),
-      description: 'This document and its local revisions will be erased from your IndexedDB storage.',
-      confirmText: 'Delete Document',
-      cancelText: 'Keep Document',
-      variant: 'danger',
-      icon: 'trash'
-    });
-
-    if (ok) {
-      await db.documents.delete(docId);
-      await db.document_cache.delete(docId);
-      navigate('/documents');
-    }
-  };
-
-  const handleClearContent = async () => {
-    setIsDrawerOpen(false);
-    setIsExportMenuOpen(false);
-    const ok = await confirm({
-      title: 'Clear Document Content',
-      message: (
-        <span>
-          Are you sure you want to clear all text in <strong className="text-neutral-900 dark:text-white">"{title}"</strong>?
-        </span>
-      ),
-      description: 'The editor textarea will be emptied immediately and auto-saved to IndexedDB.',
-      confirmText: 'Clear Content',
-      cancelText: 'Keep My Writing',
-      variant: 'warning',
-      icon: 'clear'
-    });
-
-    if (ok) {
-      setContent('');
-      setIsSaved(false);
-      executeSave('', title);
-      setCopyToast('Document content cleared');
-      setTimeout(() => setCopyToast(null), 1500);
-    }
-  };
-
-  // Calculations for status bar
-  const lineCount = content.split('\n').length;
-  const wordCount = content.trim() ? content.trim().split(/\s+/).length : 0;
-  const charCount = content.length;
-  const readingTime = Math.max(1, Math.ceil(wordCount / 200));
+  // Telemetry computations
+  const stats = useMemo(() => {
+    const lines = doc.content.split('\n').length;
+    const words = doc.content.trim() ? doc.content.trim().split(/\s+/).length : 0;
+    const chars = doc.content.length;
+    const reading = Math.max(1, Math.ceil(words / 200));
+    return { lines, words, chars, reading };
+  }, [doc.content]);
 
   return (
-    <div className={`min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors ${
-      viewMode === 'zen' ? 'fixed inset-0 z-50 overflow-hidden' : ''
-    }`}>
-      
+    <div
+      className={`min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors ${
+        viewMode === 'zen' ? 'fixed inset-0 z-50 overflow-hidden' : ''
+      }`}
+    >
       {/* Toast Notification */}
       {copyToast && (
         <div className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 px-4 py-2 rounded-xl text-xs font-semibold shadow-xl flex items-center gap-1.5 animate-in fade-in slide-in-from-top-2 duration-150 no-print">
@@ -546,669 +184,123 @@ export const EditorPage: React.FC = () => {
         </div>
       )}
 
-      {/* Floating Exit Zen Mode Button */}
-      {viewMode === 'zen' && (
-        <div className="fixed top-3 right-5 z-50 animate-in fade-in slide-in-from-top-1 duration-200 no-print">
-          <button
-            onClick={() => setViewMode('split')}
-            className="px-3 py-1.5 rounded-full bg-neutral-900/85 hover:bg-neutral-900 text-white dark:bg-neutral-100/90 dark:hover:bg-white dark:text-neutral-950 text-xs font-semibold backdrop-blur-md shadow-lg flex items-center gap-1.5 transition-all cursor-pointer hover:scale-105 select-none ring-1 ring-black/10 dark:ring-white/20"
-            title="Exit Zen Mode (or press Esc)"
-          >
-            <Minimize2 className="w-3.5 h-3.5" />
-            <span>Exit Zen <kbd className="font-mono text-[10px] bg-white/20 dark:bg-black/15 px-1 py-0.2 rounded ml-0.5">Esc</kbd></span>
-          </button>
-        </div>
-      )}
-
-
-      {/* Editor Top Navigation Bar (Refined, Breathable 3-Zone Architecture) */}
-      <header className={`h-15 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 sm:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 select-none z-30 transition-all no-print ${
-        viewMode === 'zen' ? 'opacity-0 hover:opacity-100 duration-200' : ''
-      }`}>
-        
-        {/* Zone 1 (Left): Home, Document Switcher, Spacious Title & Subtle Auto-Save Telemetry */}
-        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
-          <button
-            onClick={() => navigate('/')}
-            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
-            title="Back to Home"
-          >
-            <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Home</span>
-          </button>
-
-          <button
-            onClick={() => setIsSwitcherOpen(true)}
-            className="px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
-            title="Open Document Switcher (Ctrl+O)"
-          >
-            <FolderOpen className="w-3.5 h-3.5 text-neutral-400" />
-            <span className="hidden md:inline">Open (Ctrl+O)</span>
-          </button>
-
-          <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800 shrink-0"></div>
-
-          {/* Title & Subtle Saved Dot */}
-          <div className="flex items-center gap-2 min-w-0">
-            <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setIsSaved(false);
-              }}
-              onBlur={() => executeSave(content, title)}
-              className="bg-transparent font-bold text-sm text-neutral-950 dark:text-white focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-600 rounded-lg px-2 py-1 max-w-[140px] sm:max-w-xs md:max-w-sm truncate transition-colors"
-              title="Click to rename document"
-            />
-
-            {/* Subtle Breathable Save Dot */}
-            <div className="flex items-center gap-1.5 text-xs font-mono shrink-0 pl-1">
-              {isSaving ? (
-                <span className="text-amber-500 flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-ping"></span>
-                  <span className="hidden lg:inline text-[11px]">Saving...</span>
-                </span>
-              ) : isSaved ? (
-                <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-medium" title="All changes saved in local cache">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-                  <span className="hidden lg:inline text-[11px]">Saved</span>
-                </span>
-              ) : (
-                <span className="text-neutral-400 flex items-center gap-1.5" title="Unsaved changes">
-                  <span className="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
-                  <span className="hidden lg:inline text-[11px]">Unsaved</span>
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Zone 2 (Center): Floating View Mode Segmented Control */}
-        <div className="hidden sm:flex items-center bg-neutral-100 dark:bg-neutral-800/80 p-1 rounded-xl text-xs font-medium text-neutral-600 dark:text-neutral-400 border border-neutral-200/60 dark:border-neutral-700/60 shadow-2xs">
-          <button
-            onClick={() => setViewMode('split')}
-            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'split' ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-xs font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Split Mode (Editor + Live Preview)"
-          >
-            <Columns className="w-3.5 h-3.5" />
-            <span>Split</span>
-          </button>
-          <button
-            onClick={() => setViewMode('write')}
-            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'write' ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-xs font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Write Mode (Distraction-Free Editor)"
-          >
-            <PenTool className="w-3.5 h-3.5" />
-            <span>Write</span>
-          </button>
-          <button
-            onClick={() => setViewMode('read')}
-            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'read' ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-xs font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Read Mode (Rendered Preview Only)"
-          >
-            <Eye className="w-3.5 h-3.5" />
-            <span>Read</span>
-          </button>
-          <button
-            onClick={() => setViewMode(viewMode === 'zen' ? 'split' : 'zen')}
-            className={`px-3 py-1 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
-              viewMode === 'zen' ? 'bg-white dark:bg-neutral-900 text-neutral-950 dark:text-white shadow-xs font-semibold' : 'hover:text-neutral-900 dark:hover:text-white'
-            }`}
-            title="Zen Fullscreen Mode"
-          >
-            {viewMode === 'zen' ? <Minimize2 className="w-3.5 h-3.5" /> : <Maximize2 className="w-3.5 h-3.5" />}
-            <span>Zen</span>
-          </button>
-        </div>
-
-        {/* Zone 3 (Right): Consolidated Action Cluster */}
-        <div className="flex items-center gap-2 sm:gap-2.5">
-          
-          {/* Consolidated Tools & Studio Dropdown Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
-              className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
-                isToolsMenuOpen
-                  ? 'bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 border-transparent shadow-xs'
-                  : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200'
-              }`}
-              title="Writing tools, outline, tables, effects & templates"
-            >
-              <Sliders className="w-3.5 h-3.5 text-indigo-500" />
-              <span>Tools</span>
-              <ChevronDown className="w-3 h-3 text-neutral-400" />
-            </button>
-
-            {isToolsMenuOpen && (
-              <div 
-                className="absolute right-0 mt-2 w-64 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl p-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-150 space-y-0.5"
-                onClick={() => setIsToolsMenuOpen(false)}
-              >
-                <div className="px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-neutral-400 font-mono">
-                  Writing Studio Tools
-                </div>
-
-                <button
-                  onClick={() => setIsOutlineOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <ListTree className="w-4 h-4 text-purple-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Document Outline</div>
-                      <div className="text-[10px] text-neutral-500">Live H1–H6 table of contents</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-neutral-400">TOC</span>
-                </button>
-
-                <button
-                  onClick={() => setIsTableBuilderOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Table2 className="w-4 h-4 text-blue-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Table Builder</div>
-                      <div className="text-[10px] text-neutral-500">Visual rows & columns designer</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-neutral-400">/table</span>
-                </button>
-
-                <button
-                  onClick={() => setIsFxPopoverOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Sparkles className="w-4 h-4 text-amber-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Writing FX & Cursors</div>
-                      <div className="text-[10px] text-neutral-500">60FPS typing particles & carets</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">60FPS</span>
-                </button>
-
-                <button
-                  onClick={() => setIsTemplatesOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <LayoutTemplate className="w-4 h-4 text-emerald-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Templates Library</div>
-                      <div className="text-[10px] text-neutral-500">8 curated specs, PRDs & notes</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">8 Presets</span>
-                </button>
-
-                <button
-                  onClick={() => setIsRevisionsOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <History className="w-4 h-4 text-cyan-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Revision History</div>
-                      <div className="text-[10px] text-neutral-500">IndexedDB checkpoints & rollback</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-cyan-600 dark:text-cyan-400 font-bold">Pro</span>
-                </button>
-
-                <button
-                  onClick={() => setIsSprintPopoverOpen(true)}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
-                >
-                  <div className="flex items-center gap-2.5">
-                    <Timer className="w-4 h-4 text-rose-500" />
-                    <div>
-                      <div className="font-semibold text-neutral-900 dark:text-white">Focus Sprint Timer</div>
-                      <div className="text-[10px] text-neutral-500">Pomodoro focus sprint mode</div>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-mono text-neutral-400">25m</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Export Dropdown Menu */}
-          <div className="relative">
-            <button
-              onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
-              className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Export</span>
-              <ChevronDown className="w-3 h-3 text-neutral-400" />
-            </button>
-
-            {isExportMenuOpen && (
-              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-xl p-1.5 z-50 text-xs animate-in fade-in zoom-in-95 duration-100 space-y-0.5">
-                <button
-                  onClick={() => {
-                    setIsExportMenuOpen(false);
-                    setIsPdfStudioOpen(true);
-                  }}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2.5 text-neutral-700 dark:text-neutral-300 cursor-pointer bg-indigo-50/40 dark:bg-indigo-950/20 border border-indigo-100/60 dark:border-indigo-900/30"
-                >
-                  <Sparkles className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-                  <div>
-                    <div className="font-bold text-neutral-950 dark:text-white flex items-center gap-1.5">
-                      <span>PDF Export Studio</span>
-                      <span className="text-[9px] bg-indigo-600 text-white dark:bg-indigo-500 px-1.5 py-0.2 rounded font-bold uppercase tracking-wider">v2.4</span>
-                    </div>
-                    <div className="text-[10px] text-neutral-500 dark:text-neutral-400">Custom themes, cover & TOC</div>
-                  </div>
-                </button>
-
-                <div className="border-t border-neutral-100 dark:border-neutral-800 my-1"></div>
-
-                <button
-                  onClick={handleExportMd}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2 text-neutral-700 dark:text-neutral-300 cursor-pointer"
-                >
-                  <Download className="w-3.5 h-3.5 text-neutral-500" />
-                  <span>Download .md</span>
-                </button>
-                <button
-                  onClick={handleCopyMarkdown}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center gap-2 text-neutral-700 dark:text-neutral-300 cursor-pointer"
-                >
-                  <Copy className="w-3.5 h-3.5 text-neutral-500" />
-                  <span>Copy Markdown</span>
-                </button>
-
-                <div className="border-t border-neutral-100 dark:border-neutral-800 my-1"></div>
-
-                <button
-                  onClick={handleClearContent}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-950/40 flex items-center gap-2 text-amber-600 dark:text-amber-400 cursor-pointer"
-                >
-                  <FileX className="w-3.5 h-3.5" />
-                  <span>Clear Content...</span>
-                </button>
-
-                <button
-                  onClick={handleDeleteCurrentDoc}
-                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-red-50 dark:hover:bg-red-950/40 flex items-center gap-2 text-red-600 dark:text-red-400 cursor-pointer"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete Document...</span>
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Document Insights / Drawer Trigger */}
-          <button
-            onClick={() => setIsDrawerOpen(true)}
-            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer relative"
-            title="Document details & tags"
-          >
-            <Info className="w-4 h-4" />
-            {docMetadata?.tags?.length ? (
-              <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-blue-600"></span>
-            ) : null}
-          </button>
-
-          {/* Theme Toggle */}
-          <button
-            onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="p-2 rounded-xl text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-          >
-            {isDark ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-neutral-600" />}
-          </button>
-        </div>
-
-      </header>
-
-      {/* Main Workspace Area */}
-      <div className="flex-1 flex overflow-hidden relative">
-        
-        {/* Left Pane: Editor */}
-        {(viewMode === 'split' || viewMode === 'write' || viewMode === 'zen') && (
-          <div className={`editor-pane-container flex flex-col h-full bg-neutral-50/70 dark:bg-[#18181c] text-neutral-800 dark:text-neutral-200 transition-colors ${
-            viewMode === 'split' ? 'w-full md:w-1/2 border-r border-neutral-200 dark:border-neutral-800' : 'w-full'
-          }`}>
-            
-            {/* Editor Sub-header Bar */}
-            <div className="px-4 py-2 bg-neutral-100/80 dark:bg-[#1e1e24] border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 select-none no-print transition-colors">
-              <span className="flex items-center gap-1.5 font-medium text-neutral-700 dark:text-neutral-300">
-                <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400"></span>
-                <span>Raw Markdown</span>
-              </span>
-              
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setIsSlashMenuOpen(!isSlashMenuOpen)}
-                  className="px-2 py-0.5 rounded bg-amber-50 dark:bg-neutral-800 hover:bg-amber-100 dark:hover:bg-neutral-700 text-amber-800 dark:text-amber-300 border border-amber-200/70 dark:border-transparent font-mono text-[11px] flex items-center gap-1 cursor-pointer transition-colors shadow-2xs"
-                >
-                  <Sparkles className="w-3 h-3 text-amber-600 dark:text-amber-300" />
-                  <span>Type / for Blocks</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Textarea Area with Gutter Line Numbers */}
-            <div className={`flex-1 flex overflow-hidden relative ${
-              viewMode === 'write' || viewMode === 'zen' ? 'max-w-4xl mx-auto w-full' : ''
-            }`}>
-              {/* Line Numbers Gutter */}
-              <div className="hidden sm:block select-none py-6 pl-4 pr-3 text-right font-mono-code text-xs text-neutral-400 dark:text-neutral-600 space-y-0.5 overflow-hidden">
-                {Array.from({ length: Math.max(lineCount, 25) }, (_, i) => (
-                  <div key={i + 1} className="leading-relaxed">
-                    {i + 1}
-                  </div>
-                ))}
-              </div>
-
-              {/* Markdown Input Area */}
-              <textarea
-                ref={textareaRef}
-                value={content}
-                onChange={handleContentChange}
-                onKeyDown={handleTextareaKeyDown}
-                onKeyUp={updateCursorPosition}
-                onClick={updateCursorPosition}
-                placeholder="Start writing here... (Type / for shortcuts)"
-                className="flex-1 w-full p-6 bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 font-mono-code text-sm resize-none focus:outline-none leading-relaxed overflow-y-auto"
-                autoFocus
-              />
-
-              {/* Slash Command Palette */}
-              <SlashCommandMenu
-                isOpen={isSlashMenuOpen}
-                selectedIndex={slashSelectedIndex}
-                searchQuery={slashQuery}
-                onSelect={handleInsertSnippet}
-              />
-            </div>
-
-          </div>
-        )}
-
-        {/* Right Pane: Live Rendered Preview */}
-        {(viewMode === 'split' || viewMode === 'read') && (
-          <div className={`preview-pane-container flex flex-col h-full bg-white dark:bg-neutral-950 overflow-y-auto transition-all ${
-            viewMode === 'split' ? 'hidden md:flex md:w-1/2' : 'w-full'
-          }`}>
-            
-            {/* Preview Sub-header */}
-            <div className="px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex items-center justify-between text-xs text-neutral-500 select-none no-print">
-              <span className="flex items-center gap-1.5 font-semibold text-neutral-700 dark:text-neutral-300">
-                <Columns className="w-3.5 h-3.5" />
-                Live Rendered Preview
-              </span>
-              <span className="text-[11px] text-neutral-400">
-                GFM + KaTeX Math + Highlights
-              </span>
-            </div>
-
-            {/* Rendered Preview Document */}
-            <div className={`flex-1 p-8 sm:p-10 ${
-              viewMode === 'read' ? 'max-w-3xl mx-auto w-full' : ''
-            }`}>
-              <MarkdownPreview 
-                content={content} 
-                onToggleTask={handleToggleTask} 
-              />
-            </div>
-
-          </div>
-        )}
-
-      </div>
-
-      {/* Editor Status Bar (Bottom) */}
-      <footer className={`editor-status-bar h-8 border-t border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900/90 px-4 flex items-center justify-between text-[11px] text-neutral-500 dark:text-neutral-400 select-none z-30 transition-all duration-200 no-print ${
-        viewMode === 'zen' ? 'opacity-0 hover:opacity-100' : ''
-      }`}>
-        
-        {/* Left Stats: Cursor & Document Telemetry */}
-        <div className="flex items-center gap-3">
-          <span className="font-mono">
-            Ln {cursorPos.line}, Col {cursorPos.col}
-          </span>
-          <span className="hidden sm:inline text-neutral-300 dark:text-neutral-700">|</span>
-          <span>{lineCount} lines</span>
-          <span>{wordCount} words</span>
-          <span>{charCount} chars</span>
-          <span className="hidden md:inline text-neutral-300 dark:text-neutral-700">|</span>
-          <span className="hidden md:inline">~{readingTime} min read</span>
-        </div>
-
-        {/* Center Actions: Typewriter Mode & Focus Sprint Timer */}
-        <div className="flex items-center gap-2">
-          {/* Typewriter Scrolling Toggle */}
-          <button
-            type="button"
-            onClick={() => {
-              const next = !isTypewriterMode;
-              setIsTypewriterMode(next);
-              setCopyToast(next ? 'Typewriter Mode Activated' : 'Typewriter Mode Off');
-              setTimeout(() => setCopyToast(null), 1500);
-            }}
-            className={`px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-[10px] font-semibold ${
-              isTypewriterMode 
-                ? 'bg-blue-600 text-white shadow-2xs' 
-                : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-            }`}
-            title="Typewriter Scrolling: Keeps active writing line centered vertically"
-          >
-            <AlignCenterVertical className="w-3 h-3" />
-            <span className="hidden sm:inline">Typewriter</span>
-          </button>
-
-          {/* Focus Sprint Timer Button */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsSprintPopoverOpen(!isSprintPopoverOpen)}
-              className={`px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors cursor-pointer text-[10px] font-semibold ${
-                isSprintActive
-                  ? 'bg-amber-500 text-white animate-pulse shadow-2xs'
-                  : 'hover:bg-neutral-200/60 dark:hover:bg-neutral-800 text-neutral-600 dark:text-neutral-400'
-              }`}
-              title="Focus Sprint Timer: 15/25/45 min writing intervals"
-            >
-              <Timer className="w-3 h-3" />
-              <span>
-                {formatSprintTime(sprintSecondsRemaining)}
-                {isSprintActive && (
-                  <span className="ml-1 opacity-90">
-                    (+{Math.max(0, wordCount - sprintStartWordCount)}w)
-                  </span>
-                )}
-              </span>
-            </button>
-
-            {/* Sprint Timer Popover */}
-            {isSprintPopoverOpen && (
-              <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-52 bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-xl shadow-xl p-3 z-50 text-xs space-y-2.5 animate-in fade-in zoom-in-95 duration-100">
-                <div className="flex items-center justify-between border-b border-neutral-100 dark:border-neutral-800 pb-1.5">
-                  <span className="font-bold text-neutral-800 dark:text-neutral-200 flex items-center gap-1.5 text-xs">
-                    <Timer className="w-3.5 h-3.5 text-amber-500" />
-                    <span>Focus Sprint</span>
-                  </span>
-                  <button 
-                    onClick={() => setIsSprintPopoverOpen(false)}
-                    className="text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200"
-                  >
-                    ✕
-                  </button>
-                </div>
-
-                <div className="flex items-center justify-between gap-1 text-[10px]">
-                  {[15, 25, 45].map(mins => (
-                    <button
-                      key={mins}
-                      type="button"
-                      onClick={() => handleStartSprint(mins)}
-                      className={`flex-1 py-1 rounded border text-center font-medium cursor-pointer ${
-                        sprintDuration === mins && isSprintActive
-                          ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-600 font-bold'
-                          : 'border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-300'
-                      }`}
-                    >
-                      {mins}m
-                    </button>
-                  ))}
-                </div>
-
-                <div className="flex items-center gap-1.5 pt-1">
-                  {!isSprintActive ? (
-                    <button
-                      type="button"
-                      onClick={() => handleStartSprint()}
-                      className="flex-1 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center justify-center gap-1 cursor-pointer text-[11px]"
-                    >
-                      <Play className="w-3 h-3 fill-white" />
-                      <span>Start Sprint</span>
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={handlePauseSprint}
-                      className="flex-1 py-1.5 rounded-lg bg-neutral-800 hover:bg-neutral-900 text-white dark:bg-neutral-100 dark:text-neutral-900 font-bold flex items-center justify-center gap-1 cursor-pointer text-[11px]"
-                    >
-                      <Pause className="w-3 h-3 fill-current" />
-                      <span>Pause</span>
-                    </button>
-                  )}
-                  <button
-                    type="button"
-                    onClick={handleResetSprint}
-                    className="p-1.5 rounded-lg border border-neutral-200 dark:border-neutral-800 text-neutral-500 hover:text-neutral-900 dark:hover:text-white cursor-pointer"
-                    title="Reset Sprint"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Right Status: Storage & Quick Help */}
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setIsUpdatesOpen(true)}
-            className="hover:text-neutral-900 dark:hover:text-white cursor-pointer transition-colors flex items-center gap-1 text-xs font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 hover:bg-amber-500/20 px-2 py-0.5 rounded-full border border-amber-500/20"
-            title="What's New & Release Timeline (v2.5)"
-          >
-            <Sparkles className="w-3 h-3" />
-            <span>v2.5 Updates</span>
-          </button>
-          <span className="text-neutral-300 dark:text-neutral-700">|</span>
-          <button
-            onClick={() => setIsSwitcherOpen(true)}
-            className="hover:text-neutral-900 dark:hover:text-white cursor-pointer transition-colors flex items-center gap-1"
-          >
-            <FolderOpen className="w-3 h-3" />
-            <span>Files (Ctrl+O)</span>
-          </button>
-          <span className="text-neutral-300 dark:text-neutral-700">|</span>
-          <div className="flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
-            <span className="font-medium text-neutral-700 dark:text-neutral-300">
-              {isSupabaseConfigured() ? '⚡ Dexie + ☁️ Supabase' : '⚡ Dexie Offline Cache'}
-            </span>
-          </div>
-        </div>
-
-      </footer>
-
-      {/* Document Drawer */}
-      <DocumentDrawer
-        isOpen={isDrawerOpen}
-        onClose={() => setIsDrawerOpen(false)}
-        metadata={docMetadata}
-        onUpdateTags={handleUpdateTags}
-        wordCount={wordCount}
-        charCount={charCount}
-        lineCount={lineCount}
-        onDeleteDocument={handleDeleteCurrentDoc}
-        onClearContent={handleClearContent}
+      {/* Top Header */}
+      <EditorHeader
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        title={doc.title}
+        setTitle={doc.setTitle}
+        content={doc.content}
+        isSaved={doc.isSaved}
+        isSaving={doc.isSaving}
+        executeSave={doc.executeSave}
+        docMetadata={doc.docMetadata}
+        onOpenSwitcher={() => modals.setIsSwitcherOpen(true)}
+        onOpenDrawer={() => modals.setIsDrawerOpen(true)}
+        onOpenPdfStudio={() => modals.setIsPdfStudioOpen(true)}
+        onOpenTableBuilder={() => modals.setIsTableBuilderOpen(true)}
+        onOpenFxPopover={() => modals.setIsFxPopoverOpen(true)}
+        onOpenOutline={() => modals.setIsOutlineOpen(true)}
+        onOpenTemplates={() => modals.setIsTemplatesOpen(true)}
+        onOpenRevisions={() => modals.setIsRevisionsOpen(true)}
+        onOpenSprintPopover={() => modals.setIsSprintPopoverOpen((prev) => !prev)}
+        onExportMd={doc.handleExportMd}
+        onCopyMarkdown={doc.handleCopyMarkdown}
+        onClearContent={doc.handleClearContent}
+        onDeleteCurrentDoc={doc.handleDeleteCurrentDoc}
+        isToolsMenuOpen={modals.isToolsMenuOpen}
+        setIsToolsMenuOpen={modals.setIsToolsMenuOpen}
+        isExportMenuOpen={modals.isExportMenuOpen}
+        setIsExportMenuOpen={modals.setIsExportMenuOpen}
       />
 
-      {/* Document Switcher Modal */}
-      <DocumentSwitcherModal
-        isOpen={isSwitcherOpen}
-        onClose={() => setIsSwitcherOpen(false)}
-        currentDocId={docId}
+      {/* Main Workspace (Split View, Textarea, Markdown Preview, FX) */}
+      <EditorWorkspace
+        viewMode={viewMode}
+        setViewMode={setViewMode}
+        content={doc.content}
+        lineCount={stats.lines}
+        textareaRef={textareaRef}
+        onContentChange={handleContentChange}
+        onTextareaKeyDown={slash.handleTextareaKeyDown}
+        onCursorEvent={updateCursorPosition}
+        isSlashMenuOpen={slash.isSlashMenuOpen}
+        setIsSlashMenuOpen={slash.setIsSlashMenuOpen}
+        slashSelectedIndex={slash.slashSelectedIndex}
+        slashQuery={slash.slashQuery}
+        onInsertSnippet={slash.handleInsertSnippet}
+        onToggleTask={doc.handleToggleTask}
       />
 
-      {/* Ground-Up Modern PDF Export Studio Modal */}
-      <ExportPdfModal
-        isOpen={isPdfStudioOpen}
-        onClose={() => setIsPdfStudioOpen(false)}
-        documentTitle={title}
-        documentContent={content}
+      {/* Telemetry Status Bar */}
+      <EditorStatusBar
+        viewMode={viewMode}
+        cursorPos={cursorPos}
+        lineCount={stats.lines}
+        wordCount={stats.words}
+        charCount={stats.chars}
+        readingTime={stats.reading}
+        isTypewriterMode={modals.isTypewriterMode}
+        onToggleTypewriter={() => {
+          const next = !modals.isTypewriterMode;
+          modals.setIsTypewriterMode(next);
+          showToast(next ? 'Typewriter Mode Activated' : 'Typewriter Mode Off', 1500);
+        }}
+        isSprintActive={sprint.isSprintActive}
+        sprintDuration={sprint.sprintDuration}
+        sprintSecondsRemaining={sprint.sprintSecondsRemaining}
+        sprintStartWordCount={sprint.sprintStartWordCount}
+        formatSprintTime={sprint.formatSprintTime}
+        isSprintPopoverOpen={modals.isSprintPopoverOpen}
+        setIsSprintPopoverOpen={modals.setIsSprintPopoverOpen}
+        onStartSprint={(mins) => {
+          sprint.handleStartSprint(mins);
+          modals.setIsSprintPopoverOpen(false);
+        }}
+        onPauseSprint={sprint.handlePauseSprint}
+        onResetSprint={sprint.handleResetSprint}
+        onOpenUpdates={() => modals.setIsUpdatesOpen(true)}
+        onOpenSwitcher={() => modals.setIsSwitcherOpen(true)}
       />
 
-      {/* Visual Table Builder Modal */}
-      <TableBuilderModal
-        isOpen={isTableBuilderOpen}
-        onClose={() => setIsTableBuilderOpen(false)}
-        onInsert={handleInsertTableFromModal}
-      />
-
-      {/* Writing FX & Custom Cursor Studio Popover */}
-      <WritingFxPopover
-        isOpen={isFxPopoverOpen}
-        onClose={() => setIsFxPopoverOpen(false)}
-      />
-
-      {/* 60FPS Hardware-Accelerated Editor Typing FX Overlay */}
-      <EditorWritingFx textareaRef={textareaRef} />
-
-      {/* Interactive Document Outline / TOC Drawer */}
-      <DocumentOutlineDrawer
-        isOpen={isOutlineOpen}
-        onClose={() => setIsOutlineOpen(false)}
-        content={content}
+      {/* Lazily Mounted Heavy Modals & Drawers */}
+      <EditorModalsContainer
+        docId={doc.docId}
+        title={doc.title}
+        content={doc.content}
+        docMetadata={doc.docMetadata}
+        lineCount={stats.lines}
+        wordCount={stats.words}
+        charCount={stats.chars}
+        isDrawerOpen={modals.isDrawerOpen}
+        onCloseDrawer={() => modals.setIsDrawerOpen(false)}
+        onUpdateTags={doc.handleUpdateTags}
+        onDeleteCurrentDoc={doc.handleDeleteCurrentDoc}
+        onClearContent={doc.handleClearContent}
+        isSwitcherOpen={modals.isSwitcherOpen}
+        onCloseSwitcher={() => modals.setIsSwitcherOpen(false)}
+        isPdfStudioOpen={modals.isPdfStudioOpen}
+        onClosePdfStudio={() => modals.setIsPdfStudioOpen(false)}
+        isTableBuilderOpen={modals.isTableBuilderOpen}
+        onCloseTableBuilder={() => modals.setIsTableBuilderOpen(false)}
+        onInsertTable={doc.handleInsertTableFromModal}
+        isFxPopoverOpen={modals.isFxPopoverOpen}
+        onCloseFxPopover={() => modals.setIsFxPopoverOpen(false)}
+        isOutlineOpen={modals.isOutlineOpen}
+        onCloseOutline={() => modals.setIsOutlineOpen(false)}
         onSelectHeading={handleSelectHeading}
+        isUpdatesOpen={modals.isUpdatesOpen}
+        onCloseUpdates={() => modals.setIsUpdatesOpen(false)}
+        isTemplatesOpen={modals.isTemplatesOpen}
+        onCloseTemplates={() => modals.setIsTemplatesOpen(false)}
+        onSelectTemplate={doc.handleSelectTemplate}
+        isRevisionsOpen={modals.isRevisionsOpen}
+        onCloseRevisions={() => modals.setIsRevisionsOpen(false)}
+        onRestoreRevision={doc.handleRestoreRevision}
+        isMathStudioOpen={modals.isMathStudioOpen}
+        onCloseMathStudio={() => modals.setIsMathStudioOpen(false)}
+        onInsertFormula={handleInsertFormulaAtCursor}
       />
-
-      {/* Crafted-With-Love Product Updates & Release Timeline Modal */}
-      <ProductUpdatesModal
-        isOpen={isUpdatesOpen}
-        onClose={() => setIsUpdatesOpen(false)}
-      />
-
-      {/* In-Editor Markdown Templates Modal (Insert at cursor vs Replace) */}
-      <TemplatesModal
-        isOpen={isTemplatesOpen}
-        onClose={() => setIsTemplatesOpen(false)}
-        onSelectTemplate={handleSelectTemplate}
-        currentDocTitle={title}
-        hasExistingContent={Boolean(content.trim())}
-      />
-
-      {/* Local IndexedDB Document Revision History Modal */}
-      <RevisionHistoryModal
-        isOpen={isRevisionsOpen}
-        onClose={() => setIsRevisionsOpen(false)}
-        documentId={docId}
-        documentTitle={title}
-        currentContent={content}
-        onRestoreRevision={handleRestoreRevision}
-      />
-
     </div>
   );
 };

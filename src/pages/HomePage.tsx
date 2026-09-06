@@ -35,10 +35,11 @@ export const HomePage: React.FC = () => {
         {/* 5-Item Highlights Strip */}
         <FeatureStrip />
 
-        {/* Bento Grid 6 Flagship Features */}
+        {/* Bento Grid Features */}
         <BentoFeatures 
           onExploreFeatures={() => setIsDemoOpen(true)} 
           onOpenUpdates={() => setIsUpdatesOpen(true)}
+          onOpenTemplates={() => setIsTemplatesOpen(true)}
         />
 
         {/* Testimonial Quote */}

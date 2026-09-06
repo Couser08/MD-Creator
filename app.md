@@ -303,11 +303,19 @@ Engineered like a game engine for locked 60–144fps performance with 0ms input 
 - **Distinct Callout Alerts & Rich Markdown (`MarkdownPreview.tsx`)**:
   - Full GitHub-flavored callout support (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!CAUTION]`) with dedicated color signatures (Blue, Emerald, Amber, Purple, Rose), specialized Lucide icons, and stripped raw marker prefixes.
   - Native HTML collapsible accordions (`<details><summary>...`) parsed through `rehype-raw` with rotating chevron indicator and styled hover states.
-  - Hardware-styled keyboard badges (`<kbd>Ctrl+K</kbd>`).
 - **Live Mermaid.js Diagram Engine (`MermaidBlock.tsx`)**:
   - Renders ````mermaid ```` code blocks as interactive SVG vector diagrams in both preview and PDF exports.
   - Automatic dark/light theme switching with live dynamic re-rendering.
   - Graceful syntax error handling with code fallback and 1-click diagram source copy.
+- **Apple MacBook Pro Interactive Hero Mockup (`EditorMockup.tsx`)**:
+  - Authentic MacBook Pro CNC aluminum lid with chamfered rim, display bezel, and top camera notch with active pulsing emerald LED.
+  - Lower unibody aluminum base with machined center thumb scoop and realistic layered contact & ambient drop shadows.
+  - Flat, crisp, and rock-solid presentation (3D tilt disabled for stable, non-distracting typography).
+  - 2 curated document tabs: `QuickStart.md` (live typing + GitHub callout tips + interactive tasks) and `SystemFlow.md` (live Mermaid vector architecture flowchart).
+  - Real in-screen `<textarea>` editor with dynamic line numbers, real-time telemetry, and 60FPS particle sparks.
+  - 4 clean sticky edge tabs (`Write`, `Organize`, `Create`, `Export`) with zero SVG overlap.
+  - One-click "Launch" bridge that creates a document in Dexie and navigates seamlessly to the full editor.
+
 
 
 
