@@ -10,7 +10,14 @@ import {
   Quote, 
   Table2, 
   Sigma, 
-  Minus
+  Minus,
+  AlertCircle,
+  Lightbulb,
+  AlertTriangle,
+  ChevronDown,
+  Keyboard,
+  GitBranch,
+  LayoutTemplate
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -80,12 +87,68 @@ export const COMMANDS: CommandItem[] = [
     insertSnippet: '```typescript\n// Write your code here\nconst greeting = "Hello, MD Writer!";\nconsole.log(greeting);\n```\n'
   },
   {
+    id: 'callout-note',
+    title: 'Alert Note',
+    description: 'GitHub-style note callout box',
+    icon: AlertCircle,
+    shortcut: '/note',
+    insertSnippet: '> [!NOTE]\n> Write your note or key context here.\n'
+  },
+  {
+    id: 'callout-tip',
+    title: 'Alert Tip',
+    description: 'GitHub-style helpful tip callout',
+    icon: Lightbulb,
+    shortcut: '/tip',
+    insertSnippet: '> [!TIP]\n> Write your helpful tip here.\n'
+  },
+  {
+    id: 'callout-warning',
+    title: 'Alert Warning',
+    description: 'GitHub-style cautionary warning',
+    icon: AlertTriangle,
+    shortcut: '/warning',
+    insertSnippet: '> [!WARNING]\n> Write your cautionary warning here.\n'
+  },
+  {
+    id: 'details',
+    title: 'Collapsible Accordion',
+    description: 'Expandable spoiler / details section',
+    icon: ChevronDown,
+    shortcut: '/details',
+    insertSnippet: '<details>\n<summary>Click to view details</summary>\n\nHidden details and specifications go here.\n\n</details>\n'
+  },
+  {
+    id: 'kbd',
+    title: 'Keyboard Shortcut',
+    description: 'Styled keycap combination badge',
+    icon: Keyboard,
+    shortcut: '/kbd',
+    insertSnippet: '<kbd>Ctrl</kbd> + <kbd>K</kbd>'
+  },
+  {
+    id: 'mermaid',
+    title: 'Mermaid Flowchart',
+    description: 'Architecture diagram & sequence chart',
+    icon: GitBranch,
+    shortcut: '/mermaid',
+    insertSnippet: '```mermaid\ngraph TD\n    A[Start] --> B{Decision}\n    B -->|Yes| C[Result 1]\n    B -->|No| D[Result 2]\n```\n'
+  },
+  {
+    id: 'template',
+    title: 'Insert Template',
+    description: 'Choose from 8 curated blueprints',
+    icon: LayoutTemplate,
+    shortcut: '/template',
+    insertSnippet: '__ACTION_OPEN_TEMPLATES__'
+  },
+  {
     id: 'quote',
-    title: 'Callout Quote',
-    description: 'Highlighted note or blockquote',
+    title: 'Blockquote',
+    description: 'Highlighted quote passage',
     icon: Quote,
     shortcut: '>',
-    insertSnippet: '> **Note**\n> Write your insight or callout here.\n'
+    insertSnippet: '> Write your quotation or insight here.\n'
   },
   {
     id: 'table-builder',

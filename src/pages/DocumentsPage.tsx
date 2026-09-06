@@ -9,11 +9,13 @@ import {
   Trash2, 
   Clock, 
   LayoutGrid, 
-  List 
+  List,
+  LayoutTemplate 
 } from 'lucide-react';
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
 import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
+import { TemplatesModal } from '../components/home/TemplatesModal';
 import { useDocuments, useCreateDocument, useDeleteDocument, useTogglePin } from '../hooks/useDocuments';
 import { saveDocument } from '../db';
 import { useConfirm } from '../stores/useConfirmStore';
@@ -23,6 +25,7 @@ export const DocumentsPage: React.FC = () => {
   const [activeTag, setActiveTag] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
+  const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const confirm = useConfirm();
@@ -85,7 +88,10 @@ export const DocumentsPage: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
-      <Navbar onOpenUpdates={() => setIsUpdatesOpen(true)} />
+      <Navbar 
+        onOpenUpdates={() => setIsUpdatesOpen(true)} 
+        onOpenTemplates={() => setIsTemplatesOpen(true)} 
+      />
 
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
         
@@ -101,6 +107,14 @@ export const DocumentsPage: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-3">
+            <button
+              onClick={() => setIsTemplatesOpen(true)}
+              className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <LayoutTemplate className="w-4 h-4 text-emerald-500" />
+              <span>Templates</span>
+            </button>
+
             <button
               onClick={() => fileInputRef.current?.click()}
               className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
@@ -332,6 +346,12 @@ export const DocumentsPage: React.FC = () => {
       <ProductUpdatesModal
         isOpen={isUpdatesOpen}
         onClose={() => setIsUpdatesOpen(false)}
+      />
+
+      {/* Markdown Templates Library Modal */}
+      <TemplatesModal
+        isOpen={isTemplatesOpen}
+        onClose={() => setIsTemplatesOpen(false)}
       />
     </div>
   );

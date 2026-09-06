@@ -276,8 +276,39 @@ Engineered like a game engine for locked 60–144fps performance with 0ms input 
   - Linear/Apple-inspired chronological updates timeline from foundational v1.0 through v2.5.
   - Interactive category filters (`⚡ Engine & 60FPS`, `📄 PDF Studio`, `✨ UI & Carets`, `☁️ Cloud Sync`), keyword search, and animated heart craft signature.
   - Accessible from the homepage navigation, footer, features banner, and the in-editor status bar.
-- **Flagship Bento Features Grid (`BentoFeatures.tsx`)**:
-  - Apple/Linear style 6-card bento showcase highlighting 60–144FPS Writing FX, PDF Studio v2, Outline Navigator, Dual-Engine Storage, and Slash Commands & Visual Tables.
 - **Comprehensive Exploration Studio (`DemoModal.tsx`)**:
   - Interactive feature previewer with categorized capability tabs, architecture specifications, and direct bridge to the release timeline.
+
+---
+
+## 10. Breathable Workspace, Apple-Grade Bento, 8-Template Suite & Local Snapshots (v2.6)
+
+- **Breathable 3-Zone Editor Header (`EditorPage.tsx`)**:
+  - Consolidates 12+ adjacent buttons into a distraction-free, airy 3-zone layout.
+  - **Zone 1 (Left)**: Back to Home, Document Switcher (`Ctrl+O`), Title input, and discreet auto-save dot telemetry (`● Saved` / `● Saving...`).
+  - **Zone 2 (Center)**: Floating segmented view control (`Split`, `Write`, `Read`, `Zen`) with generous negative space.
+  - **Zone 3 (Right)**: Consolidated **Tools** dropdown menu (Outline, Table Builder, Writing FX, Templates, Revision History, Focus Sprint), **Export** dropdown (PDF Studio v2.4 + Markdown), Document Info drawer, and Theme toggle.
+- **Apple-Grade Homepage Bento Grid (`BentoFeatures.tsx`)**:
+  - Strict dynamic light/dark theming (`bg-white dark:bg-neutral-900`) with zero hardcoded dark backgrounds.
+  - 5 living micro-UIs: interactive caret terminal with live Neon/Matrix/Amber switcher, 3D layered PDF document sheet stack, live Outline TOC tree with pulsing H1 indicator, Dexie <-> Supabase bidirectional sync bridge, and floating Spotlight-style slash command palette.
+- **8-Blueprint Template Suite (`templates.ts` & `TemplatesModal.tsx`)**:
+  - Centralized in `src/data/templates.ts`: GitHub README, Technical RFC, PRD, Executive Summary & OKRs, Meeting Notes & Action Items, Research Paper & KaTeX Equations, Bug RCA, and Daily Focus Journal.
+  - Available across Homepage, Documents Library, and in-editor via `/template` or the Tools menu with dual-mode "Insert at cursor" vs "Replace document" safety flow.
+- **Expanded Slash Commands (`SlashCommandMenu.tsx`)**:
+  - Added `/callout` and `/note` (GitHub-style alert note), `/tip` (alert tip), `/warning` (alert warning), `/details` (collapsible accordion), `/kbd` (styled key combination badge), `/mermaid` (flowchart diagram), and `/template` (blueprint picker).
+- **Local Dexie.js Revision Snapshot Engine (`RevisionHistoryModal.tsx`)**:
+  - 100% offline client-side revision checkpoints in IndexedDB (`MdWriterDB.revisions`).
+  - Debounced auto-snapshotting after 30s of typing inactivity, auto-pruned at 30 revisions per document.
+  - Side-by-side inspection modal with instant 1-click rollback and automatic safety backup.
+- **Distinct Callout Alerts & Rich Markdown (`MarkdownPreview.tsx`)**:
+  - Full GitHub-flavored callout support (`> [!NOTE]`, `> [!TIP]`, `> [!WARNING]`, `> [!IMPORTANT]`, `> [!CAUTION]`) with dedicated color signatures (Blue, Emerald, Amber, Purple, Rose), specialized Lucide icons, and stripped raw marker prefixes.
+  - Native HTML collapsible accordions (`<details><summary>...`) parsed through `rehype-raw` with rotating chevron indicator and styled hover states.
+  - Hardware-styled keyboard badges (`<kbd>Ctrl+K</kbd>`).
+- **Live Mermaid.js Diagram Engine (`MermaidBlock.tsx`)**:
+  - Renders ````mermaid ```` code blocks as interactive SVG vector diagrams in both preview and PDF exports.
+  - Automatic dark/light theme switching with live dynamic re-rendering.
+  - Graceful syntax error handling with code fallback and 1-click diagram source copy.
+
+
+
 

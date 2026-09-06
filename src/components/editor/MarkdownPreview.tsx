@@ -2,9 +2,20 @@ import React, { useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import remarkMath from 'remark-math';
+import rehypeRaw from 'rehype-raw';
 import rehypeKatex from 'rehype-katex';
 import rehypeHighlight from 'rehype-highlight';
-import { Copy, Check } from 'lucide-react';
+import { 
+  Copy, 
+  Check, 
+  Info, 
+  Lightbulb, 
+  AlertTriangle, 
+  Sparkles, 
+  ShieldAlert, 
+  ChevronRight 
+} from 'lucide-react';
+import { MermaidBlock } from './MermaidBlock';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -26,6 +37,98 @@ const extractTextFromReactNode = (node: React.ReactNode): string => {
   return '';
 };
 
+// Alert Callout configuration for GitHub-style blockquotes
+interface AlertCalloutConfig {
+  type: 'note' | 'tip' | 'warning' | 'important' | 'caution';
+  title: string;
+  icon: React.ElementType;
+  containerClass: string;
+  titleClass: string;
+  iconClass: string;
+}
+
+const ALERT_CONFIGS: Record<string, AlertCalloutConfig> = {
+  note: {
+    type: 'note',
+    title: 'Note',
+    icon: Info,
+    containerClass: 'border-l-4 border-blue-500 bg-blue-50/70 dark:bg-blue-950/30 text-blue-950 dark:text-blue-200',
+    titleClass: 'text-blue-700 dark:text-blue-400 font-bold',
+    iconClass: 'text-blue-600 dark:text-blue-400'
+  },
+  tip: {
+    type: 'tip',
+    title: 'Tip',
+    icon: Lightbulb,
+    containerClass: 'border-l-4 border-emerald-500 bg-emerald-50/70 dark:bg-emerald-950/30 text-emerald-950 dark:text-emerald-200',
+    titleClass: 'text-emerald-700 dark:text-emerald-400 font-bold',
+    iconClass: 'text-emerald-600 dark:text-emerald-400'
+  },
+  warning: {
+    type: 'warning',
+    title: 'Warning',
+    icon: AlertTriangle,
+    containerClass: 'border-l-4 border-amber-500 bg-amber-50/70 dark:bg-amber-950/30 text-amber-950 dark:text-amber-200',
+    titleClass: 'text-amber-700 dark:text-amber-400 font-bold',
+    iconClass: 'text-amber-600 dark:text-amber-400'
+  },
+  important: {
+    type: 'important',
+    title: 'Important',
+    icon: Sparkles,
+    containerClass: 'border-l-4 border-purple-500 bg-purple-50/70 dark:bg-purple-950/30 text-purple-950 dark:text-purple-200',
+    titleClass: 'text-purple-700 dark:text-purple-400 font-bold',
+    iconClass: 'text-purple-600 dark:text-purple-400'
+  },
+  caution: {
+    type: 'caution',
+    title: 'Caution',
+    icon: ShieldAlert,
+    containerClass: 'border-l-4 border-rose-500 bg-rose-50/70 dark:bg-rose-950/30 text-rose-950 dark:text-rose-200',
+    titleClass: 'text-rose-700 dark:text-rose-400 font-bold',
+    iconClass: 'text-rose-600 dark:text-rose-400'
+  }
+};
+
+/**
+ * Inspects blockquote children to see if it starts with [!NOTE], [!TIP], etc.
+ */
+const extractAlertInfo = (children: React.ReactNode): { config: AlertCalloutConfig; content: React.ReactNode } | null => {
+  const childrenArray = React.Children.toArray(children);
+  if (childrenArray.length === 0) return null;
+
+  const firstChild = childrenArray[0];
+  if (!React.isValidElement(firstChild)) return null;
+
+  const innerProps = (firstChild as any).props;
+  const innerChildren = innerProps?.children;
+  const innerText = extractTextFromReactNode(innerChildren).trimStart();
+
+  const match = innerText.match(/^\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]/i);
+  if (!match) return null;
+
+  const alertType = match[1].toLowerCase();
+  const config = ALERT_CONFIGS[alertType];
+  if (!config) return null;
+
+  // Strip "[!NOTE]" prefix from first paragraph
+  const textWithoutMarker = innerText.replace(/^\[!(NOTE|TIP|WARNING|IMPORTANT|CAUTION)\]\s*/i, '');
+
+  let remainingFirstChild: React.ReactNode = null;
+  if (textWithoutMarker.length > 0) {
+    remainingFirstChild = React.cloneElement(firstChild as React.ReactElement<any>, {
+      children: textWithoutMarker
+    });
+  }
+
+  const remainingChildren = [
+    remainingFirstChild,
+    ...childrenArray.slice(1)
+  ].filter(Boolean);
+
+  return { config, content: remainingChildren };
+};
+
 export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onToggleTask }) => {
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
 
@@ -39,7 +142,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
     <div data-markdown-preview="true" className="w-full text-neutral-800 dark:text-neutral-200 leading-relaxed text-sm select-text">
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
-        rehypePlugins={[rehypeKatex, rehypeHighlight]}
+        rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
         components={{
           // Headings
           h1: ({ children }) => (
@@ -112,11 +215,64 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
             return <input type={type} {...props} />;
           },
 
-          // Blockquotes & Callouts
-          blockquote: ({ children }) => (
-            <blockquote className="border-l-4 border-sky-500 dark:border-sky-400 bg-sky-50/60 dark:bg-sky-950/30 p-3.5 my-3.5 rounded-r-xl text-neutral-800 dark:text-neutral-200 italic shadow-2xs">
+          // Blockquotes & Callout Alerts
+          blockquote: ({ children }) => {
+            const alertData = extractAlertInfo(children);
+
+            if (alertData) {
+              const { config, content: alertContent } = alertData;
+              const IconComp = config.icon;
+
+              return (
+                <div className={`my-4 p-4 rounded-r-2xl shadow-2xs ${config.containerClass}`}>
+                  <div className="flex items-center gap-2 mb-1.5 select-none">
+                    <IconComp className={`w-4 h-4 shrink-0 ${config.iconClass}`} />
+                    <span className={`text-xs uppercase tracking-wider font-mono ${config.titleClass}`}>
+                      {config.title}
+                    </span>
+                  </div>
+                  <div className="text-xs sm:text-sm leading-relaxed pl-6">
+                    {alertContent}
+                  </div>
+                </div>
+              );
+            }
+
+            // Standard Quote
+            return (
+              <blockquote className="border-l-4 border-neutral-300 dark:border-neutral-700 bg-neutral-50/60 dark:bg-neutral-900/40 p-4 my-3.5 rounded-r-2xl text-neutral-700 dark:text-neutral-300 italic shadow-2xs">
+                {children}
+              </blockquote>
+            );
+          },
+
+          // Collapsible Accordion (details & summary)
+          details: ({ children, ...props }: any) => (
+            <details 
+              className="my-3.5 rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-neutral-50/40 dark:bg-neutral-900/40 overflow-hidden transition-all group open:bg-white dark:open:bg-neutral-900 shadow-2xs"
+              {...props}
+            >
               {children}
-            </blockquote>
+            </details>
+          ),
+          summary: ({ children, ...props }: any) => (
+            <summary 
+              className="px-4 py-3 font-semibold text-xs sm:text-sm text-neutral-900 dark:text-white cursor-pointer select-none hover:bg-neutral-100/70 dark:hover:bg-neutral-800/60 transition-colors flex items-center gap-2 list-none marker:hidden"
+              {...props}
+            >
+              <ChevronRight className="w-3.5 h-3.5 text-neutral-400 group-open:rotate-90 transition-transform duration-150 shrink-0" />
+              <span className="flex-1">{children}</span>
+            </summary>
+          ),
+
+          // Keyboard Badges (<kbd>)
+          kbd: ({ children, ...props }: any) => (
+            <kbd 
+              className="px-1.5 py-0.5 rounded-md bg-neutral-100 dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 font-mono text-[11px] text-neutral-800 dark:text-neutral-200 shadow-2xs font-semibold inline-block"
+              {...props}
+            >
+              {children}
+            </kbd>
           ),
 
           // Tables
@@ -143,7 +299,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
             </td>
           ),
 
-          // Code blocks & Inline Code
+          // Code blocks, Inline Code & Mermaid Diagrams
           code: ({ className, children, ...props }) => {
             const match = /language-(\w+)/.exec(className || '');
             const isInline = !match && typeof children === 'string' && !children.includes('\n');
@@ -159,6 +315,11 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
                   {children}
                 </code>
               );
+            }
+
+            // Interactive Mermaid Diagram
+            if (match && match[1] === 'mermaid') {
+              return <MermaidBlock chart={rawCode} />;
             }
 
             return (

@@ -60,11 +60,11 @@ const TIERS: PricingTier[] = [
       'Everything in Starter',
       'Supabase Cloud sync across all devices',
       'Real-time multi-device cloud backup',
-      'Document version history & snapshot recovery',
+      'Local revision history & 1-click snapshot rollback',
+      '1-Click Web Publishing with password protection',
       'Custom tag organization & document library',
-      'Shareable public view-only document links',
-      'Custom CSS export styling & templates',
-      'Priority email & developer support'
+      '8 Curated blueprints & template studio',
+      'Gemini AI Writing Copilot (Coming Soon)'
     ],
     ctaText: 'Start Pro Free Trial',
     ctaAction: '/auth'
@@ -78,11 +78,11 @@ const TIERS: PricingTier[] = [
     icon: Users,
     features: [
       'Everything in Pro Writer',
+      'Real-Time Multiplayer Collaboration (Live Presence)',
       'Shared team workspace & collaborative folders',
       'Role-based permissions (Admin, Editor, Viewer)',
       'Centralized team license & billing management',
       'Team shared templates & style guides',
-      'Audit log & security telemetry',
       'SSO & SAML authentication integration',
       'Dedicated 99.9% uptime SLA & account manager'
     ],
@@ -95,10 +95,12 @@ const COMPARISON_ROWS = [
   { feature: 'Local Offline Storage (IndexedDB)', free: true, pro: true, team: true },
   { feature: 'Markdown & KaTeX Math Rendering', free: true, pro: true, team: true },
   { feature: 'Export to PDF & Markdown (.md)', free: true, pro: true, team: true },
-  { feature: 'Slash Block Commands (/)', free: true, pro: true, team: true },
+  { feature: 'Slash Block Commands (/) & Callouts', free: true, pro: true, team: true },
+  { feature: 'Curated Markdown Blueprint Templates', free: true, pro: true, team: true },
+  { feature: 'Local Revision History & Snapshots', free: true, pro: true, team: true },
   { feature: 'Supabase Multi-Device Cloud Sync', free: false, pro: true, team: true },
-  { feature: 'Revision History & Version Recovery', free: false, pro: true, team: true },
-  { feature: 'Public Read-Only Document URLs', free: false, pro: true, team: true },
+  { feature: '1-Click Web Publishing & Passwords', free: false, pro: true, team: true },
+  { feature: 'Real-Time Multiplayer Collaboration', free: false, pro: false, team: true },
   { feature: 'Shared Team Workspace & Tags', free: false, pro: false, team: true },
   { feature: 'SSO & Enterprise SAML Login', free: false, pro: false, team: true },
   { feature: 'Support Level', free: 'Community', pro: 'Priority Email', team: 'Dedicated 24/7' }

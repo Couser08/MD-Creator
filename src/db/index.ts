@@ -22,16 +22,32 @@ export interface CachedContent {
   isDirty?: boolean;
 }
 
+export interface DocumentRevision {
+  id?: number;
+  documentId: string;
+  title: string;
+  content: string;
+  wordCount: number;
+  timestamp: number;
+  reason?: string;
+}
+
 // Database declaration extending Dexie
 export class MdWriterDB extends Dexie {
   documents!: EntityTable<DocumentMetadata, 'id'>;
   document_cache!: EntityTable<CachedContent, 'id'>;
+  revisions!: EntityTable<DocumentRevision, 'id'>;
 
   constructor() {
     super('MdWriterDB');
     this.version(1).stores({
       documents: 'id, title, updatedAt, createdAt, isPinned, isFavorite, openCount, *tags',
       document_cache: 'id, cachedAt'
+    });
+    this.version(2).stores({
+      documents: 'id, title, updatedAt, createdAt, isPinned, isFavorite, openCount, *tags',
+      document_cache: 'id, cachedAt',
+      revisions: '++id, documentId, timestamp'
     });
   }
 }
@@ -141,12 +157,13 @@ export async function createNewDocument(title = 'Untitled Document', initialCont
 }
 
 /**
- * Deletes a document and evicts its cached content from IndexedDB.
+ * Deletes a document and evicts its cached content and revisions from IndexedDB.
  */
 export async function deleteDocument(id: string): Promise<void> {
-  await db.transaction('rw', db.documents, db.document_cache, async () => {
+  await db.transaction('rw', db.documents, db.document_cache, db.revisions, async () => {
     await db.documents.delete(id);
     await db.document_cache.delete(id);
+    await db.revisions.where('documentId').equals(id).delete();
   });
 }
 
@@ -159,6 +176,78 @@ export async function togglePinDocument(id: string): Promise<boolean> {
   const newPinned = !doc.isPinned;
   await db.documents.update(id, { isPinned: newPinned });
   return newPinned;
+}
+
+/**
+ * Creates an offline revision snapshot in Dexie IndexedDB.
+ * Automatically caps total revisions per document at 30 to conserve storage.
+ */
+export async function createRevisionSnapshot(
+  documentId: string, 
+  title: string, 
+  content: string, 
+  reason = 'Auto-snapshot'
+): Promise<number | undefined> {
+  if (!content.trim()) return undefined;
+
+  const now = Date.now();
+  const wordCount = countWords(content);
+
+  return await db.transaction('rw', db.revisions, async () => {
+    // Avoid creating duplicate identical snapshot if content is identical to the latest revision
+    const latest = await db.revisions
+      .where('documentId')
+      .equals(documentId)
+      .reverse()
+      .sortBy('timestamp');
+
+    if (latest.length > 0 && latest[0].content === content) {
+      return latest[0].id;
+    }
+
+    // Insert new snapshot
+    const newId = await db.revisions.add({
+      documentId,
+      title,
+      content,
+      wordCount,
+      timestamp: now,
+      reason
+    });
+
+    // Prune older revisions if count exceeds 30
+    const allRevisions = await db.revisions
+      .where('documentId')
+      .equals(documentId)
+      .sortBy('timestamp');
+
+    if (allRevisions.length > 30) {
+      const toDelete = allRevisions.slice(0, allRevisions.length - 30);
+      const idsToDelete = toDelete.map(r => r.id!).filter(Boolean);
+      await db.revisions.bulkDelete(idsToDelete);
+    }
+
+    return newId;
+  });
+}
+
+/**
+ * Retrieves all saved local revisions for a document, ordered newest first.
+ */
+export async function getDocumentRevisions(documentId: string): Promise<DocumentRevision[]> {
+  const revs = await db.revisions
+    .where('documentId')
+    .equals(documentId)
+    .reverse()
+    .sortBy('timestamp');
+  return revs;
+}
+
+/**
+ * Deletes all revisions for a specific document.
+ */
+export async function deleteDocumentRevisions(documentId: string): Promise<void> {
+  await db.revisions.where('documentId').equals(documentId).delete();
 }
 
 /**
