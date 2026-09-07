@@ -34,6 +34,9 @@ const RevisionHistoryModal = React.lazy(() =>
 const KatexFormulaModal = React.lazy(() =>
   import('../../../components/editor/KatexFormulaModal').then((m) => ({ default: m.KatexFormulaModal }))
 );
+const ImageEmbedModal = React.lazy(() =>
+  import('../../../components/editor/ImageEmbedModal').then((m) => ({ default: m.ImageEmbedModal }))
+);
 
 interface EditorModalsContainerProps {
   docId: string;
@@ -71,6 +74,9 @@ interface EditorModalsContainerProps {
   isMathStudioOpen: boolean;
   onCloseMathStudio: () => void;
   onInsertFormula: (latexSnippet: string) => void;
+  isImageModalOpen?: boolean;
+  onCloseImageModal?: () => void;
+  onInsertImage?: (markdownSnippet: string) => void;
 }
 
 export const EditorModalsContainer: React.FC<EditorModalsContainerProps> = React.memo(({
@@ -109,6 +115,9 @@ export const EditorModalsContainer: React.FC<EditorModalsContainerProps> = React
   isMathStudioOpen,
   onCloseMathStudio,
   onInsertFormula,
+  isImageModalOpen = false,
+  onCloseImageModal,
+  onInsertImage,
 }) => {
   return (
     <Suspense fallback={null}>
@@ -198,6 +207,14 @@ export const EditorModalsContainer: React.FC<EditorModalsContainerProps> = React
           isOpen={isMathStudioOpen}
           onClose={onCloseMathStudio}
           onInsertFormula={onInsertFormula}
+        />
+      )}
+
+      {isImageModalOpen && (
+        <ImageEmbedModal
+          isOpen={isImageModalOpen}
+          onClose={onCloseImageModal || (() => {})}
+          onInsertImage={onInsertImage || (() => {})}
         />
       )}
     </Suspense>

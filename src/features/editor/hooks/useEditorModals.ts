@@ -15,6 +15,7 @@ export function useEditorModals() {
   const [isToolsMenuOpen, setIsToolsMenuOpen] = useState(false);
   const [isSprintPopoverOpen, setIsSprintPopoverOpen] = useState(false);
   const [isMathStudioOpen, setIsMathStudioOpen] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   return {
     isDrawerOpen,
@@ -45,5 +46,7 @@ export function useEditorModals() {
     setIsSprintPopoverOpen,
     isMathStudioOpen,
     setIsMathStudioOpen,
+    isImageModalOpen,
+    setIsImageModalOpen,
   };
 }

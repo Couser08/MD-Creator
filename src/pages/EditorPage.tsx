@@ -74,6 +74,7 @@ export const EditorPage: React.FC = () => {
     onOpenTableBuilder: () => modals.setIsTableBuilderOpen(true),
     onOpenTemplates: () => modals.setIsTemplatesOpen(true),
     onOpenMathStudio: () => modals.setIsMathStudioOpen(true),
+    onOpenImageModal: () => modals.setIsImageModalOpen(true),
   });
 
   // Insert formula snippet from KaTeX Studio at cursor
@@ -95,6 +96,32 @@ export const EditorPage: React.FC = () => {
       doc.setContent(next);
       doc.executeSave(next, doc.title);
       showToast('✨ Inserted KaTeX formula');
+      setTimeout(() => {
+        textareaRef.current?.focus();
+      }, 50);
+    },
+    [doc, showToast]
+  );
+
+  // Insert image markdown snippet from Image Embed Studio at cursor
+  const handleInsertImageAtCursor = useCallback(
+    (imageSnippet: string) => {
+      if (!textareaRef.current) {
+        const next = doc.content + '\n\n' + imageSnippet.trim() + '\n';
+        doc.setContent(next);
+        doc.executeSave(next, doc.title);
+        showToast('🖼️ Embedded image');
+        return;
+      }
+      const cursor = textareaRef.current.selectionStart;
+      const before = doc.content.substring(0, cursor);
+      const after = doc.content.substring(cursor);
+      const sepBefore = before.endsWith('\n\n') ? '' : before.endsWith('\n') ? '\n' : '\n\n';
+      const sepAfter = after.startsWith('\n\n') ? '' : after.startsWith('\n') ? '\n' : '\n\n';
+      const next = before + sepBefore + imageSnippet.trim() + sepAfter + after;
+      doc.setContent(next);
+      doc.executeSave(next, doc.title);
+      showToast('🖼️ Embedded image');
       setTimeout(() => {
         textareaRef.current?.focus();
       }, 50);
@@ -199,6 +226,7 @@ export const EditorPage: React.FC = () => {
         onOpenDrawer={() => modals.setIsDrawerOpen(true)}
         onOpenPdfStudio={() => modals.setIsPdfStudioOpen(true)}
         onOpenTableBuilder={() => modals.setIsTableBuilderOpen(true)}
+        onOpenImageModal={() => modals.setIsImageModalOpen(true)}
         onOpenFxPopover={() => modals.setIsFxPopoverOpen(true)}
         onOpenOutline={() => modals.setIsOutlineOpen(true)}
         onOpenTemplates={() => modals.setIsTemplatesOpen(true)}
@@ -300,6 +328,9 @@ export const EditorPage: React.FC = () => {
         isMathStudioOpen={modals.isMathStudioOpen}
         onCloseMathStudio={() => modals.setIsMathStudioOpen(false)}
         onInsertFormula={handleInsertFormulaAtCursor}
+        isImageModalOpen={modals.isImageModalOpen}
+        onCloseImageModal={() => modals.setIsImageModalOpen(false)}
+        onInsertImage={handleInsertImageAtCursor}
       />
     </div>
   );

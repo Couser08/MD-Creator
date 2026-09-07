@@ -6,7 +6,8 @@ import {
   Cloud, 
   PenTool, 
   GitCommit, 
-  Layers
+  Layers,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export type UpdateCategory = 'all' | 'engine' | 'publishing' | 'sync' | 'ux';
@@ -30,8 +31,29 @@ export interface UpdateMilestone {
 
 export const MILESTONES: UpdateMilestone[] = [
   {
-    version: 'v3.0',
+    version: 'v3.1',
     isLatest: true,
+    date: 'September 2026',
+    title: 'Embed Image Studio, Decluttered Minimalist Navbar, Feedback Hub & Supporter Coffee',
+    category: 'ux',
+    categoryLabel: 'Media & UI Architecture',
+    summary: 'A major design and performance evolution: senior-developer loading optimizations, client-side WebP image compression with offline persistence, native screenshot paste (Ctrl+V) and drag-and-drop, decluttered minimalist navbar with elegant Resources dropdown, dedicated Feedback & Feature Request channel, and a creator Buy Me a Coffee supporter modal.',
+    icon: ImageIcon,
+    iconColor: 'text-purple-500 dark:text-purple-400',
+    iconBg: 'bg-purple-50 dark:bg-purple-950/50 border-purple-200/60 dark:border-purple-900/50',
+    highlights: [
+      { type: 'perf', text: 'Zero-Blocking Initial Render: Code-split GlobalConfirmDialog, CommandPaletteModal, and BuyCoffeeModal, isolating 120KB of animation libraries from critical first paint.' },
+      { type: 'perf', text: 'Fine-Grained Database Splitting: Decoupled Rollup chunks into vendor-query, vendor-dexie, and vendor-supabase, and deferred non-critical session sync with requestIdleCallback.' },
+      { type: 'new', text: 'Embed Image Studio (Offline + Web): Dual-tab image insertion dialog with client-side HTML5 Canvas bicubic downscaling, WebP conversion, and live size savings telemetry.' },
+      { type: 'new', text: 'Direct Clipboard & Drag-and-Drop Images: Paste screenshots directly via Ctrl+V or drag files onto the editor with animated dropzone feedback.' },
+      { type: 'new', text: 'Dedicated Feedback Hub (/feedback): 4 category channels (Bug, Feature, Praise, Question), Apple emoji sentiment rating, system telemetry diagnostics, and Supabase queue sync.' },
+      { type: 'new', text: 'Buy Me a Coffee Supporter Modal: Multi-tier coffee boost ($3 Espresso, $5 Latte, $10 Roaster, Custom), personal note, and direct links to BMC, Ko-fi, and GitHub Sponsors.' },
+      { type: 'improved', text: 'Decluttered Navbar with Breathing Room: Streamlined top navigation into core destinations (Home, Documents, Features) with an elegant grouped Resources dropdown and responsive mobile drawer.' },
+      { type: 'improved', text: 'Rich Image Markdown Preview & Lightbox: Rounded borders, captions from markdown titles, broken link fallbacks, and 1-click full-screen zoom modal.' }
+    ]
+  },
+  {
+    version: 'v3.0',
     date: 'March 2026',
     title: 'Architecture Modularization, PWA Desktop & Mobile App, KaTeX Studio & Apple Emojis',
     category: 'engine',

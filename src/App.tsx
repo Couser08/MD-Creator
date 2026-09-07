@@ -1,13 +1,11 @@
-import React, { useEffect, Suspense } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { seedInitialDocuments } from './db/seed';
 import { useAuthStore } from './stores/useAuthStore';
-import { GlobalConfirmDialog } from './components/common/GlobalConfirmDialog';
+import { useConfirmStore } from './stores/useConfirmStore';
 import { PageLoader } from './components/common/PageLoader';
 import { useCommandPalette } from './hooks/useCommandPalette';
-import { CommandPaletteModal } from './components/common/CommandPaletteModal';
 
-// Code-split route level chunks
+// Lazy-loaded route chunks
 const HomePage = React.lazy(() => import('./pages/HomePage').then((m) => ({ default: m.HomePage })));
 const EditorPage = React.lazy(() => import('./pages/EditorPage').then((m) => ({ default: m.EditorPage })));
 const DocumentsPage = React.lazy(() => import('./pages/DocumentsPage').then((m) => ({ default: m.DocumentsPage })));
@@ -15,23 +13,73 @@ const AuthPage = React.lazy(() => import('./pages/AuthPage').then((m) => ({ defa
 const PricingPage = React.lazy(() => import('./pages/PricingPage').then((m) => ({ default: m.PricingPage })));
 const BlogPage = React.lazy(() => import('./pages/BlogPage').then((m) => ({ default: m.BlogPage })));
 const UpdatesPage = React.lazy(() => import('./pages/UpdatesPage').then((m) => ({ default: m.UpdatesPage })));
+const FeedbackPage = React.lazy(() => import('./pages/FeedbackPage').then((m) => ({ default: m.FeedbackPage })));
+
+// Lazy-loaded global utility modals (zero impact on initial critical render)
+const GlobalConfirmDialog = React.lazy(() =>
+  import('./components/common/GlobalConfirmDialog').then((m) => ({ default: m.GlobalConfirmDialog }))
+);
+const CommandPaletteModal = React.lazy(() =>
+  import('./components/common/CommandPaletteModal').then((m) => ({ default: m.CommandPaletteModal }))
+);
+const BuyCoffeeModal = React.lazy(() =>
+  import('./components/common/BuyCoffeeModal').then((m) => ({ default: m.BuyCoffeeModal }))
+);
 
 export const App: React.FC = () => {
   const { checkAuth } = useAuthStore();
+  const { isOpen: isConfirmOpen } = useConfirmStore();
   const cmd = useCommandPalette();
+  const [isCoffeeOpen, setIsCoffeeOpen] = useState(false);
 
+  // Global listener for Buy Me a Coffee modal trigger
   useEffect(() => {
-    // 1. Seed initial demo documents into IndexedDB
-    seedInitialDocuments().catch(console.error);
+    const handleOpenCoffee = () => setIsCoffeeOpen(true);
+    window.addEventListener('open-buy-coffee', handleOpenCoffee);
+    return () => window.removeEventListener('open-buy-coffee', handleOpenCoffee);
+  }, []);
 
-    // 2. Check active auth state (Supabase / local demo session)
-    checkAuth().catch(console.error);
+  // Defer non-critical storage initialization and session checks until idle
+  useEffect(() => {
+    const initAppServices = () => {
+      import('./db/seed')
+        .then((m) => m.seedInitialDocuments())
+        .catch(console.error);
+      checkAuth().catch(console.error);
+    };
+
+    if (typeof window !== 'undefined' && 'requestIdleCallback' in window) {
+      const idleId = window.requestIdleCallback(initAppServices, { timeout: 1500 });
+      return () => window.cancelIdleCallback(idleId);
+    } else {
+      const timer = setTimeout(initAppServices, 50);
+      return () => clearTimeout(timer);
+    }
   }, [checkAuth]);
 
   return (
     <BrowserRouter>
-      <GlobalConfirmDialog />
-      <CommandPaletteModal isOpen={cmd.isOpen} onClose={cmd.closePalette} />
+      {/* Global Confirm Dialog — Lazy Loaded strictly when triggered */}
+      {isConfirmOpen && (
+        <Suspense fallback={null}>
+          <GlobalConfirmDialog />
+        </Suspense>
+      )}
+
+      {/* Command Palette Modal — Lazy Loaded when triggered */}
+      {cmd.isOpen && (
+        <Suspense fallback={null}>
+          <CommandPaletteModal isOpen={cmd.isOpen} onClose={cmd.closePalette} />
+        </Suspense>
+      )}
+
+      {/* Buy Me a Coffee Modal — Lazy Loaded on-demand */}
+      {isCoffeeOpen && (
+        <Suspense fallback={null}>
+          <BuyCoffeeModal isOpen={isCoffeeOpen} onClose={() => setIsCoffeeOpen(false)} />
+        </Suspense>
+      )}
+
       <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<HomePage />} />
@@ -39,6 +87,7 @@ export const App: React.FC = () => {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/updates" element={<UpdatesPage />} />
+          <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/editor" element={<EditorPage />} />
           <Route path="/editor/:id" element={<EditorPage />} />

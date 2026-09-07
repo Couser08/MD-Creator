@@ -55,7 +55,7 @@ export const BentoTemplatesCard: React.FC<BentoTemplatesCardProps> = ({ onOpenTe
   ];
 
   return (
-    <div className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-[0_4px_30px_-6px_rgba(0,0,0,0.03)] dark:shadow-none flex flex-col justify-between transition-all group">
+    <div id="templates" className="p-6 sm:p-8 rounded-3xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-[0_4px_30px_-6px_rgba(0,0,0,0.03)] dark:shadow-none flex flex-col justify-between transition-all group">
       {/* Top Header */}
       <div>
         <div className="flex items-center gap-2 mb-3">

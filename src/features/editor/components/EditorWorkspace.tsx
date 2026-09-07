@@ -1,9 +1,10 @@
-import React from 'react';
-import { Columns, Sparkles, Minimize2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { Columns, Sparkles, Minimize2, UploadCloud } from 'lucide-react';
 import { ViewMode } from '../types';
 import { SlashCommandMenu } from '../../../components/editor/SlashCommandMenu';
 import { MarkdownPreview } from '../../../components/editor/MarkdownPreview';
 import { EditorWritingFx } from '../../../components/editor/EditorWritingFx';
+import { optimizeImage } from '../../../utils/imageCompressor';
 
 interface EditorWorkspaceProps {
   viewMode: ViewMode;
@@ -38,6 +39,61 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
   onInsertSnippet,
   onToggleTask,
 }) => {
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
+
+  // Handle direct clipboard paste (Ctrl+V) of screenshots or image files
+  const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (let i = 0; i < items.length; i++) {
+      if (items[i].type.startsWith('image/')) {
+        const file = items[i].getAsFile();
+        if (file) {
+          e.preventDefault();
+          try {
+            const result = await optimizeImage(file, 'pasted-image.png');
+            onInsertSnippet(`\n![Pasted image](${result.dataUrl})\n`);
+          } catch (err) {
+            console.error('Failed to optimize pasted image:', err);
+          }
+          return;
+        }
+      }
+    }
+  };
+
+  // Handle direct file drag & drop onto the editor
+  const handleDragOver = (e: React.DragEvent) => {
+    if (e.dataTransfer.types.includes('Files')) {
+      e.preventDefault();
+      setIsDraggingOver(true);
+    }
+  };
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0];
+      if (file.type.startsWith('image/')) {
+        e.preventDefault();
+        setIsDraggingOver(false);
+        try {
+          const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+          const result = await optimizeImage(file, file.name);
+          onInsertSnippet(`\n![${cleanName}](${result.dataUrl})\n`);
+        } catch (err) {
+          console.error('Failed to optimize dropped image:', err);
+        }
+        return;
+      }
+    }
+    setIsDraggingOver(false);
+  };
+
   return (
     <>
       {/* Floating Exit Zen Mode Button */}
@@ -106,10 +162,29 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
                 onKeyDown={onTextareaKeyDown}
                 onKeyUp={onCursorEvent}
                 onClick={onCursorEvent}
-                placeholder="Start writing here... (Type / for shortcuts)"
+                onPaste={handlePaste}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+                placeholder="Start writing here... (Type / for shortcuts, drag & drop or paste images)"
                 className="flex-1 w-full p-6 bg-transparent text-neutral-900 dark:text-neutral-100 placeholder-neutral-400 dark:placeholder-neutral-500 font-mono-code text-sm resize-none focus:outline-none leading-relaxed overflow-y-auto"
                 autoFocus
               />
+
+              {/* Drag & Drop Visual Overlay */}
+              {isDraggingOver && (
+                <div className="absolute inset-0 z-40 bg-blue-600/10 dark:bg-blue-500/10 border-2 border-dashed border-blue-500 rounded-xl backdrop-blur-xs flex flex-col items-center justify-center pointer-events-none p-6 text-center animate-in fade-in duration-150">
+                  <div className="w-14 h-14 rounded-2xl bg-blue-100 dark:bg-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center mb-3 shadow-md">
+                    <UploadCloud className="w-7 h-7 animate-bounce" />
+                  </div>
+                  <p className="text-sm font-bold text-neutral-900 dark:text-white">
+                    Drop image to optimize & embed
+                  </p>
+                  <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-xs">
+                    Automatically compressed to WebP with bicubic smoothing for 100% offline persistence.
+                  </p>
+                </div>
+              )}
 
               {/* Slash Command Palette */}
               <SlashCommandMenu

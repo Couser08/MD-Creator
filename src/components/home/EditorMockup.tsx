@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createNewDocument } from '../../db';
 import { MockupMacBookFrame } from './mockup/MockupMacBookFrame';
 import { MockupWorkspace } from './mockup/MockupWorkspace';
 import { useMockupSimulation } from './mockup/useMockupSimulation';
@@ -31,6 +30,7 @@ export const EditorMockup: React.FC = () => {
   // Open active mock document inside the real Editor app
   const handleOpenInFullApp = async () => {
     try {
+      const { createNewDocument } = await import('../../db');
       const newId = await createNewDocument(currentDoc.title.replace('.md', ''), content);
       navigate(`/editor/${newId}`);
     } catch {

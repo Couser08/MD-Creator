@@ -13,10 +13,13 @@ import {
   ArrowRight,
   ExternalLink,
   Download,
+  Coffee,
+  MessageSquare,
 } from 'lucide-react';
 import { db, DocumentMetadata, createNewDocument } from '../../db';
 import { useThemeStore } from '../../stores/useThemeStore';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
+import { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
 
 interface CommandPaletteModalProps {
   isOpen: boolean;
@@ -28,7 +31,7 @@ interface CommandPaletteModalProps {
 interface PaletteAction {
   id: string;
   title: string;
-  category: 'Documents' | 'Quick Actions' | 'Formulas & Math' | 'Navigation';
+  category: 'Documents' | 'Quick Actions' | 'Formulas & Math' | 'Navigation' | 'Community & Support';
   description?: string;
   icon: React.ElementType;
   iconColor: string;
@@ -163,6 +166,34 @@ export const CommandPaletteModal: React.FC<CommandPaletteModalProps> = ({
         },
       });
     }
+
+    list.push({
+      id: 'action-buy-coffee',
+      title: 'Buy Me a Coffee',
+      category: 'Community & Support',
+      description: 'Support independent, privacy-first markdown tooling',
+      icon: Coffee,
+      iconColor: 'text-amber-500 bg-amber-50 dark:bg-amber-950/50',
+      shortcut: '☕',
+      perform: () => {
+        onClose();
+        openBuyCoffeeModal();
+      },
+    });
+
+    list.push({
+      id: 'action-feedback',
+      title: 'Submit Feedback & Ideas',
+      category: 'Community & Support',
+      description: 'Report bugs, suggest features, or share thoughts',
+      icon: MessageSquare,
+      iconColor: 'text-blue-500 bg-blue-50 dark:bg-blue-950/50',
+      shortcut: '/feedback',
+      perform: () => {
+        onClose();
+        navigate('/feedback');
+      },
+    });
 
     // 3. Formulas & Math
     list.push({

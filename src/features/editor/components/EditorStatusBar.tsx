@@ -190,7 +190,7 @@ export const EditorStatusBar: React.FC<EditorStatusBarProps> = React.memo(({
           title="What's New & Release Timeline (v2.5)"
         >
           <Sparkles className="w-3 h-3" />
-          <span>v2.5 Updates</span>
+          <span>v3.1 Updates</span>
         </button>
         <span className="text-neutral-300 dark:text-neutral-700">|</span>
         <button

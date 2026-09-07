@@ -10,14 +10,13 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { MILESTONES, UpdateCategory } from '../../data/productUpdates';
+import { renderWithAppleEmojis } from '../../utils/appleEmoji';
 
 interface ProductUpdatesModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
-
-import { MILESTONES, UpdateCategory } from '../../data/productUpdates';
-import { renderWithAppleEmojis } from '../../utils/appleEmoji';
 
 export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen, onClose }) => {
   const navigate = useNavigate();
@@ -86,7 +85,7 @@ export const ProductUpdatesModal: React.FC<ProductUpdatesModalProps> = ({ isOpen
                     What's New & Release Timeline
                   </h2>
                   <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-neutral-900 text-white dark:bg-white dark:text-neutral-950 shadow-xs">
-                    v3.0 Live
+                    v3.1 Live
                   </span>
                 </div>
                 <p className="text-xs text-neutral-500 dark:text-neutral-400">

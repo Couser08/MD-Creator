@@ -12,7 +12,10 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
-import { MarkdownPreview } from '../components/editor/MarkdownPreview';
+
+const MarkdownPreview = React.lazy(() =>
+  import('../components/editor/MarkdownPreview').then((m) => ({ default: m.MarkdownPreview }))
+);
 
 interface Article {
   id: string;
@@ -518,7 +521,17 @@ export const BlogPage: React.FC = () => {
 
               {/* Rendered Markdown Article */}
               <div className="prose dark:prose-invert max-w-none">
-                <MarkdownPreview content={activeArticle.content} />
+                <React.Suspense fallback={
+                  <div className="space-y-4 py-4 animate-pulse">
+                    <div className="h-8 bg-neutral-200/50 dark:bg-neutral-800/60 rounded-lg w-2/3" />
+                    <div className="h-4 bg-neutral-200/40 dark:bg-neutral-800/50 rounded w-full" />
+                    <div className="h-4 bg-neutral-200/40 dark:bg-neutral-800/50 rounded w-5/6" />
+                    <div className="h-4 bg-neutral-200/40 dark:bg-neutral-800/50 rounded w-4/5" />
+                    <div className="h-28 bg-neutral-200/30 dark:bg-neutral-800/40 rounded-xl mt-6" />
+                  </div>
+                }>
+                  <MarkdownPreview content={activeArticle.content} />
+                </React.Suspense>
               </div>
             </div>
 

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { X, Search, Copy, Check, Plus, Sigma, Sparkles, BookOpen } from 'lucide-react';
 import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import { KATEX_FORMULAS, KatexFormula, FormulaCategory } from '../../data/katexFormulas';
 
 interface KatexFormulaModalProps {

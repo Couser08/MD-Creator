@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
 
 interface FooterProps {
   onOpenUpdates?: () => void;
@@ -38,6 +39,9 @@ export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
               <Link to="/blog" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 Blog
               </Link>
+              <Link to="/feedback" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
+                Feedback
+              </Link>
               {onOpenUpdates ? (
                 <button 
                   type="button" 
@@ -45,7 +49,7 @@ export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
                   className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>Changelog</span>
-                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.0</span>
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.1</span>
                 </button>
               ) : (
                 <Link 
@@ -53,9 +57,16 @@ export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
                   className="hover:text-neutral-900 dark:hover:text-white transition-colors cursor-pointer flex items-center gap-1"
                 >
                   <span>Changelog</span>
-                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.0</span>
+                  <span className="px-1.5 py-0.5 rounded font-mono text-[9px] bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800">v3.1</span>
                 </Link>
               )}
+              <button
+                type="button"
+                onClick={openBuyCoffeeModal}
+                className="hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400"
+              >
+                <span>☕ Buy Coffee</span>
+              </button>
               <a href="#about" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 About
               </a>

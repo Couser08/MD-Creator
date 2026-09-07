@@ -17,7 +17,8 @@ import {
   ChevronDown,
   Keyboard,
   GitBranch,
-  LayoutTemplate
+  LayoutTemplate,
+  Image as ImageIcon
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -181,6 +182,14 @@ export const COMMANDS: CommandItem[] = [
     icon: Sigma,
     shortcut: '$$',
     insertSnippet: '$$\nE = mc^2\n$$\n'
+  },
+  {
+    id: 'image',
+    title: 'Embed Image Studio',
+    description: 'Upload local image (compressed offline) or enter web URL',
+    icon: ImageIcon,
+    shortcut: '/image',
+    insertSnippet: '__ACTION_OPEN_IMAGE_MODAL__'
   },
   {
     id: 'divider',

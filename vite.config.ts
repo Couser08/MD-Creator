@@ -41,14 +41,36 @@ export default defineConfig({
           }
         ]
       },
-      injectRegister: 'auto',
+      injectRegister: null,
       devOptions: {
-        enabled: true,
-        type: 'module',
+        enabled: false,
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2,woff,ttf}'],
         maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        runtimeCaching: [
+          {
+            urlPattern: /^https:\/\/fonts\.googleapis\.com\/.*/i,
+            handler: 'StaleWhileRevalidate',
+            options: {
+              cacheName: 'google-fonts-stylesheets',
+            },
+          },
+          {
+            urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'google-fonts-webfonts',
+              expiration: {
+                maxEntries: 30,
+                maxAgeSeconds: 60 * 60 * 24 * 365, // 1 year
+              },
+              cacheableResponse: {
+                statuses: [0, 200],
+              },
+            },
+          },
+        ],
       }
     })
   ],
@@ -63,7 +85,13 @@ export default defineConfig({
       output: {
         manualChunks(id) {
           if (id.includes('node_modules')) {
-            if (id.includes('react/') || id.includes('react-dom/') || id.includes('react-router-dom/')) {
+            if (
+              id.includes('react/') ||
+              id.includes('react-dom/') ||
+              id.includes('react-router/') ||
+              id.includes('react-router-dom/') ||
+              id.includes('scheduler/')
+            ) {
               return 'vendor-react';
             }
             if (id.includes('mermaid')) {
@@ -84,10 +112,19 @@ export default defineConfig({
             ) {
               return 'vendor-markdown';
             }
-            if (id.includes('dexie') || id.includes('@supabase') || id.includes('@tanstack')) {
-              return 'vendor-db';
+            if (id.includes('@tanstack')) {
+              return 'vendor-query';
             }
-            if (id.includes('lucide-react') || id.includes('framer-motion') || id.includes('zustand')) {
+            if (id.includes('dexie')) {
+              return 'vendor-dexie';
+            }
+            if (id.includes('@supabase')) {
+              return 'vendor-supabase';
+            }
+            if (id.includes('framer-motion')) {
+              return 'vendor-animation';
+            }
+            if (id.includes('lucide-react') || id.includes('zustand') || id.includes('clsx') || id.includes('tailwind-merge')) {
               return 'vendor-ui';
             }
           }
@@ -96,4 +133,3 @@ export default defineConfig({
     }
   }
 });
-

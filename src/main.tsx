@@ -21,8 +21,18 @@ if (typeof window !== 'undefined') {
   });
 }
 
-// Register PWA service worker immediately for offline capability & install prompt
-registerSW({ immediate: true });
+// Register PWA service worker during idle/load to protect FCP and TTI
+if (typeof window !== 'undefined') {
+  if (typeof (window as any).requestIdleCallback === 'function') {
+    (window as any).requestIdleCallback(() => {
+      registerSW();
+    });
+  } else {
+    window.addEventListener('load', () => {
+      registerSW();
+    });
+  }
+}
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>

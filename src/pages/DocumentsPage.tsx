@@ -14,11 +14,16 @@ import {
 } from 'lucide-react';
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
-import { ProductUpdatesModal } from '../components/home/ProductUpdatesModal';
-import { TemplatesModal } from '../components/home/TemplatesModal';
 import { useDocuments, useCreateDocument, useDeleteDocument, useTogglePin } from '../hooks/useDocuments';
 import { saveDocument } from '../db';
 import { useConfirm } from '../stores/useConfirmStore';
+
+const ProductUpdatesModal = React.lazy(() =>
+  import('../components/home/ProductUpdatesModal').then((m) => ({ default: m.ProductUpdatesModal }))
+);
+const TemplatesModal = React.lazy(() =>
+  import('../components/home/TemplatesModal').then((m) => ({ default: m.TemplatesModal }))
+);
 
 export const DocumentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
@@ -343,16 +348,24 @@ export const DocumentsPage: React.FC = () => {
       <Footer onOpenUpdates={() => setIsUpdatesOpen(true)} />
 
       {/* Crafted-with-Love Release Timeline Modal */}
-      <ProductUpdatesModal
-        isOpen={isUpdatesOpen}
-        onClose={() => setIsUpdatesOpen(false)}
-      />
+      {isUpdatesOpen && (
+        <React.Suspense fallback={null}>
+          <ProductUpdatesModal
+            isOpen={isUpdatesOpen}
+            onClose={() => setIsUpdatesOpen(false)}
+          />
+        </React.Suspense>
+      )}
 
       {/* Markdown Templates Library Modal */}
-      <TemplatesModal
-        isOpen={isTemplatesOpen}
-        onClose={() => setIsTemplatesOpen(false)}
-      />
+      {isTemplatesOpen && (
+        <React.Suspense fallback={null}>
+          <TemplatesModal
+            isOpen={isTemplatesOpen}
+            onClose={() => setIsTemplatesOpen(false)}
+          />
+        </React.Suspense>
+      )}
     </div>
   );
 };

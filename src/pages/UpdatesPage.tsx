@@ -70,7 +70,7 @@ export const UpdatesPage: React.FC = () => {
             <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             <span className="font-mono uppercase tracking-wider text-[11px]">Product Evolution &amp; Changelog</span>
             <span className="w-1 h-1 rounded-full bg-neutral-300 dark:bg-neutral-700" />
-            <span className="text-indigo-600 dark:text-indigo-400 font-bold">v3.0 Live</span>
+            <span className="text-indigo-600 dark:text-indigo-400 font-bold">v3.1 Live</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-neutral-950 dark:text-white leading-[1.08] mb-5">
@@ -90,9 +90,9 @@ export const UpdatesPage: React.FC = () => {
               <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">-98.8% reduction</div>
             </div>
             <div className="p-3">
-              <div className="text-xs text-neutral-400 font-medium">Offline Engine</div>
-              <div className="text-lg font-black text-neutral-950 dark:text-white mt-0.5">PWA Ready</div>
-              <div className="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium mt-0.5">95 cached assets</div>
+              <div className="text-xs text-neutral-400 font-medium">Image Studio</div>
+              <div className="text-lg font-black text-neutral-950 dark:text-white mt-0.5">WebP Engine</div>
+              <div className="text-[11px] text-purple-600 dark:text-purple-400 font-medium mt-0.5">Paste &amp; compress</div>
             </div>
             <div className="p-3">
               <div className="text-xs text-neutral-400 font-medium">KaTeX Studio</div>

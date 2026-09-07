@@ -18,8 +18,11 @@ import {
   Moon,
   ExternalLink
 } from 'lucide-react';
-import { MarkdownPreview } from '../../editor/MarkdownPreview';
 import { SAMPLE_DOCS, SampleDoc, SparkParticle, ViewMode, SideTab } from './mockupData';
+
+const MarkdownPreview = React.lazy(() =>
+  import('../../editor/MarkdownPreview').then((m) => ({ default: m.MarkdownPreview }))
+);
 
 interface MockupWorkspaceProps {
   mockupTheme: 'dark' | 'light';
@@ -514,10 +517,19 @@ export const MockupWorkspace: React.FC<MockupWorkspaceProps> = ({
               {(viewMode === 'split' || viewMode === 'preview') && (
                 <div className={`h-full overflow-y-auto p-4 select-text ${mockupTheme === 'dark' ? 'bg-[#16161f] text-neutral-100' : 'bg-white text-neutral-800'} ${viewMode === 'preview' ? 'col-span-1 lg:col-span-2' : ''}`}>
                   <div className="max-w-none prose prose-sm dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-500">
-                    <MarkdownPreview 
-                      content={content} 
-                      onToggleTask={handleToggleTask} 
-                    />
+                    <React.Suspense fallback={
+                      <div className="space-y-3 py-2 animate-pulse">
+                        <div className="h-5 bg-neutral-200/40 dark:bg-neutral-800/60 rounded w-3/4" />
+                        <div className="h-3.5 bg-neutral-200/30 dark:bg-neutral-800/40 rounded w-full" />
+                        <div className="h-3.5 bg-neutral-200/30 dark:bg-neutral-800/40 rounded w-5/6" />
+                        <div className="h-12 bg-neutral-200/20 dark:bg-neutral-800/30 rounded-xl mt-4" />
+                      </div>
+                    }>
+                      <MarkdownPreview 
+                        content={content} 
+                        onToggleTask={handleToggleTask} 
+                      />
+                    </React.Suspense>
                   </div>
                 </div>
               )}

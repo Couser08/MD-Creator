@@ -11,6 +11,7 @@ interface UseSlashCommandsOptions {
   onOpenTableBuilder: () => void;
   onOpenTemplates: () => void;
   onOpenMathStudio: () => void;
+  onOpenImageModal?: () => void;
 }
 
 export function useSlashCommands({
@@ -23,6 +24,7 @@ export function useSlashCommands({
   onOpenTableBuilder,
   onOpenTemplates,
   onOpenMathStudio,
+  onOpenImageModal,
 }: UseSlashCommandsOptions) {
   const [isSlashMenuOpen, setIsSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
@@ -78,6 +80,14 @@ export function useSlashCommands({
         return;
       }
 
+      if (snippet === '__ACTION_OPEN_IMAGE_MODAL__') {
+        setContent(cleanBefore + afterCursor);
+        setIsSlashMenuOpen(false);
+        setSlashQuery('');
+        onOpenImageModal?.();
+        return;
+      }
+
       const nextContent = cleanBefore + snippet + afterCursor;
       setContent(nextContent);
       setIsSlashMenuOpen(false);
@@ -95,7 +105,7 @@ export function useSlashCommands({
 
       executeSave(nextContent, title);
     },
-    [content, title, setContent, executeSave, textareaRef, updateCursorPosition, onOpenTableBuilder, onOpenTemplates]
+    [content, title, setContent, executeSave, textareaRef, updateCursorPosition, onOpenTableBuilder, onOpenTemplates, onOpenMathStudio, onOpenImageModal]
   );
 
   // Keyboard navigation inside textarea for slash palette

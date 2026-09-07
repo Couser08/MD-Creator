@@ -23,7 +23,8 @@ import {
   ListTree, 
   Sliders, 
   History, 
-  LayoutTemplate 
+  LayoutTemplate,
+  Image as ImageIcon
 } from 'lucide-react';
 import { useThemeStore } from '../../../stores/useThemeStore';
 import { ViewMode } from '../types';
@@ -44,6 +45,7 @@ interface EditorHeaderProps {
   onOpenDrawer: () => void;
   onOpenPdfStudio: () => void;
   onOpenTableBuilder: () => void;
+  onOpenImageModal?: () => void;
   onOpenFxPopover: () => void;
   onOpenOutline: () => void;
   onOpenTemplates: () => void;
@@ -73,6 +75,7 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
   onOpenDrawer,
   onOpenPdfStudio,
   onOpenTableBuilder,
+  onOpenImageModal,
   onOpenFxPopover,
   onOpenOutline,
   onOpenTemplates,
@@ -248,6 +251,25 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
                 </div>
                 <span className="text-[10px] font-mono text-neutral-400">/table</span>
               </button>
+
+              {onOpenImageModal && (
+                <button
+                  onClick={() => {
+                    setIsToolsMenuOpen(false);
+                    onOpenImageModal();
+                  }}
+                  className="w-full text-left px-3 py-2 rounded-xl hover:bg-neutral-100 dark:hover:bg-neutral-800 flex items-center justify-between text-neutral-700 dark:text-neutral-300 cursor-pointer group"
+                >
+                  <div className="flex items-center gap-2.5">
+                    <ImageIcon className="w-4 h-4 text-purple-500" />
+                    <div>
+                      <div className="font-semibold text-neutral-900 dark:text-white">Embed Image Studio</div>
+                      <div className="text-[10px] text-neutral-500">Offline upload or web link</div>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-mono text-neutral-400">/image</span>
+                </button>
+              )}
 
               <button
                 onClick={onOpenFxPopover}
