@@ -81,6 +81,8 @@ export const FeedbackPage: React.FC = () => {
   const [name, setName] = useState('');
   const [priority, setPriority] = useState<Priority>('normal');
   const [includeSystemInfo, setIncludeSystemInfo] = useState(true);
+  const [willingnessToPay, setWillingnessToPay] = useState<string>('');
+  const [monetizationFeature, setMonetizationFeature] = useState<string>('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
@@ -131,6 +133,8 @@ export const FeedbackPage: React.FC = () => {
       user_name: name.trim() || null,
       user_email: email.trim() || null,
       priority,
+      willingness_to_pay: willingnessToPay || null,
+      paid_feature_request: monetizationFeature.trim() || null,
       system_info: includeSystemInfo ? getSystemInfo() : null,
       created_at: new Date().toISOString()
     };
@@ -346,6 +350,52 @@ export const FeedbackPage: React.FC = () => {
                     </div>
                   </label>
                   <span className="text-[10px] text-neutral-400">MD Writer v3.1</span>
+                </div>
+              </div>
+
+              {/* Optional 4. Willingness to Pay & Feature Demand */}
+              <div className="space-y-3 pt-3 border-t border-neutral-200/60 dark:border-neutral-800/60 text-xs">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">
+                    4. Product Demand & Pricing (Optional)
+                  </label>
+                  <span className="text-[10px] text-amber-600 dark:text-amber-400 font-mono font-semibold">Roadmap Input</span>
+                </div>
+
+                <p className="text-[11px] text-neutral-500 dark:text-neutral-400 leading-normal">
+                  Would you pay for premium capabilities like cross-device cloud sync, team collaboration, or custom branding?
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {[
+                    { id: 'yes', label: 'Yes ($5–$10 / mo)', desc: 'For sync & teams' },
+                    { id: 'maybe', label: 'Maybe', desc: 'Depends on feature' },
+                    { id: 'free_only', label: 'Prefer Free Only', desc: 'Love open source' },
+                  ].map((opt) => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      onClick={() => setWillingnessToPay(willingnessToPay === opt.id ? '' : opt.id)}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        willingnessToPay === opt.id
+                          ? 'border-neutral-950 dark:border-white bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 font-semibold shadow-xs'
+                          : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-850 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                      }`}
+                    >
+                      <div className="font-bold text-xs">{opt.label}</div>
+                      <div className={`text-[10px] mt-0.5 ${willingnessToPay === opt.id ? 'opacity-80' : 'text-neutral-400'}`}>{opt.desc}</div>
+                    </button>
+                  ))}
+                </div>
+
+                <div>
+                  <input
+                    type="text"
+                    placeholder="Which specific feature would you pay for most? (e.g., Live Team Sync, PDF Covers, AI Copilot)"
+                    value={monetizationFeature}
+                    onChange={(e) => setMonetizationFeature(e.target.value)}
+                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                  />
                 </div>
               </div>
 

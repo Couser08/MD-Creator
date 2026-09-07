@@ -498,9 +498,12 @@ export const MockupWorkspace: React.FC<MockupWorkspaceProps> = ({
                   {/* Status Bar */}
                   <div className={`px-3 py-1.5 border-t ${mockupTheme === 'dark' ? 'bg-[#121217] border-neutral-800/80 text-neutral-500' : 'bg-neutral-100 border-neutral-200 text-neutral-500'} flex items-center justify-between text-[10px] font-mono shrink-0`}>
                     <div className="flex items-center gap-2">
-                      <span className="flex items-center gap-1 text-emerald-400">
+                      <span 
+                        className="flex items-center gap-1 text-emerald-500 dark:text-emerald-400 font-medium cursor-help"
+                        title="Hardware-accelerated 2D canvas rendering for lag-free particle effects & carets"
+                      >
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        <span>60 FPS</span>
+                        <span>⚡ Smooth 60fps</span>
                       </span>
                       <span>•</span>
                       <span>Ln {stats.lines}, Col 1</span>

@@ -179,7 +179,7 @@ export const DemoModal: React.FC<DemoModalProps> = ({ isOpen, onClose, onOpenUpd
           <div className="px-6 py-2.5 border-b border-neutral-100 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs shrink-0">
             {[
               { id: 'all', label: 'All Capabilities' },
-              { id: 'fx', label: '⚡ 60FPS Writing FX' },
+              { id: 'fx', label: '⚡ Smooth 60fps FX' },
               { id: 'pdf', label: '📄 PDF Studio' },
               { id: 'outline', label: '📑 Outline & TOC' },
               { id: 'sync', label: '☁️ Dual Cloud Sync' },

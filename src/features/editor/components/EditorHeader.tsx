@@ -279,10 +279,15 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
                   <Sparkles className="w-4 h-4 text-amber-500" />
                   <div>
                     <div className="font-semibold text-neutral-900 dark:text-white">Writing FX & Cursors</div>
-                    <div className="text-[10px] text-neutral-500">60FPS typing particles & carets</div>
+                    <div className="text-[10px] text-neutral-500">Hardware-accelerated particles & carets</div>
                   </div>
                 </div>
-                <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold">60FPS</span>
+                <span 
+                  className="text-[10px] font-mono text-amber-600 dark:text-amber-400 font-bold"
+                  title="Hardware-accelerated 2D canvas rendering for lag-free particle effects & carets"
+                >
+                  ⚡ 60fps
+                </span>
               </button>
 
               <button

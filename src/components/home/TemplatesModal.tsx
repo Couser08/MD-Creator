@@ -19,7 +19,7 @@ interface TemplatesModalProps {
   hasExistingContent?: boolean;
 }
 
-const CATEGORIES = ['All', 'Engineering', 'Product', 'Team', 'Academic', 'Personal'] as const;
+const CATEGORIES = ['All', 'Work', 'Personal', 'Content & Dev'] as const;
 
 export const TemplatesModal: React.FC<TemplatesModalProps> = ({ 
   isOpen, 

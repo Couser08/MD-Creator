@@ -1,6 +1,8 @@
 import React from 'react';
 
-// Common shortcodes mapped to their unified hex codes
+// Microsoft Fluent Emoji & Open-Source Asset Engine (MIT Licensed)
+// Eliminates proprietary Apple copyright risks with full commercial safety
+
 const SHORTCODE_MAP: Record<string, string> = {
   rocket: '1f680',
   fire: '1f525',
@@ -35,7 +37,49 @@ const SHORTCODE_MAP: Record<string, string> = {
   pencil: '270f-fe0f',
 };
 
-// Converts any unicode emoji to Apple unified hex filename
+// Curated 3D Microsoft Fluent Emoji asset map (MIT Licensed)
+const FLUENT_3D_ASSET_MAP: Record<string, string> = {
+  '1f680': 'Rocket/3D/rocket_3d.png',
+  '1f525': 'Fire/3D/fire_3d.png',
+  '2728': 'Sparkles/3D/sparkles_3d.png',
+  '2615': 'Hot%20beverage/3D/hot_beverage_3d.png',
+  '2764-fe0f': 'Red%20heart/3D/red_heart_3d.png',
+  '2764': 'Red%20heart/3D/red_heart_3d.png',
+  '2b50': 'Star/3D/star_3d.png',
+  '26a1': 'High%20voltage/3D/high_voltage_3d.png',
+  '1f4a1': 'Light%20bulb/3D/light_bulb_3d.png',
+  '1f4c4': 'Page%20facing%20up/3D/page_facing_up_3d.png',
+  '1f4d1': 'Bookmark%20tabs/3D/bookmark_tabs_3d.png',
+  '2601-fe0f': 'Cloud/3D/cloud_3d.png',
+  '2601': 'Cloud/3D/cloud_3d.png',
+  '1f9d8': 'Person%20in%20lotus%20position/Default/3D/person_in_lotus_position_3d_default.png',
+  '1f62b': 'Tired%20face/3D/tired_face_3d.png',
+  '1f641': 'Slightly%20frowning%20face/3D/slightly_frowning_face_3d.png',
+  '1f610': 'Neutral%20face/3D/neutral_face_3d.png',
+  '1f60a': 'Smiling%20face%20with%20smiling%20eyes/3D/smiling_face_with_smiling_eyes_3d.png',
+  '1f929': 'Star-struck/3D/star-struck_3d.png',
+  '1f64c': 'Raising%20hands/Default/3D/raising_hands_3d_default.png',
+  '1f3af': 'Bullseye/3D/bullseye_3d.png',
+  '23f1-fe0f': 'Stopwatch/3D/stopwatch_3d.png',
+  '23f1': 'Stopwatch/3D/stopwatch_3d.png',
+  '1f6d2': 'Shopping%20cart/3D/shopping_cart_3d.png',
+  '1f373': 'Cooking/3D/cooking_3d.png',
+  '1f389': 'Party%20popper/3D/party_popper_3d.png',
+  '1f4dd': 'Memo/3D/memo_3d.png',
+  '1f512': 'Locked/3D/locked_3d.png',
+  '1f4bb': 'Laptop/3D/laptop_3d.png',
+  '1f4f1': 'Mobile%20phone/3D/mobile_phone_3d.png',
+  '1f4c5': 'Calendar/3D/calendar_3d.png',
+  '1f4c1': 'File%20folder/3D/file_folder_3d.png',
+  '1f5d1-fe0f': 'Wastebasket/3D/wastebasket_3d.png',
+  '1f5d1': 'Wastebasket/3D/wastebasket_3d.png',
+  '1f3a8': 'Artist%20palette/3D/artist_palette_3d.png',
+  '270f-fe0f': 'Pencil/3D/pencil_3d.png',
+  '270f': 'Pencil/3D/pencil_3d.png',
+  '2705': 'Check%20mark%20button/3D/check_mark_button_3d.png'
+};
+
+// Converts any unicode emoji to hex code string
 export function emojiToUnified(emoji: string): string {
   const codePoints: string[] = [];
   for (const ch of Array.from(emoji)) {
@@ -47,7 +91,7 @@ export function emojiToUnified(emoji: string): string {
   return codePoints.join('-');
 }
 
-export function getAppleEmojiUrl(emojiOrShortcode: string): string {
+export function getFluentEmojiUrl(emojiOrShortcode: string): string {
   let unified = '';
   if (emojiOrShortcode.startsWith(':') && emojiOrShortcode.endsWith(':')) {
     const code = emojiOrShortcode.slice(1, -1).toLowerCase();
@@ -57,30 +101,41 @@ export function getAppleEmojiUrl(emojiOrShortcode: string): string {
   }
 
   if (!unified) {
-    unified = '2728'; // default sparkles fallback
+    unified = '2728';
   }
 
-  return `https://cdn.jsdelivr.net/npm/emoji-datasource-apple@15.1.2/img/apple/64/${unified}.png`;
+  // 1. Try Microsoft Fluent Emoji 3D asset if mapped
+  const fluentPath = FLUENT_3D_ASSET_MAP[unified] || FLUENT_3D_ASSET_MAP[unified.replace(/-fe0f/g, '')];
+  if (fluentPath) {
+    return `https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets/${fluentPath}`;
+  }
+
+  // 2. Open-source vector Twemoji fallback (CC-BY 4.0 / MIT)
+  const cleanHex = unified.replace(/-fe0f/g, '');
+  return `https://cdn.jsdelivr.net/gh/jdecked/twemoji@latest/assets/svg/${cleanHex}.svg`;
 }
+
+// Backward-compatible alias
+export const getAppleEmojiUrl = getFluentEmojiUrl;
 
 // Regex matching unicode pictographics, emojis, and shortcodes (:rocket:)
 export const EMOJI_REGEX = /(\p{Extended_Pictographic}(?:\uFE0F|\u200D\p{Extended_Pictographic})*|:[a-zA-Z0-9_+-]+:)/gu;
 
-interface AppleEmojiProps {
+interface FluentEmojiProps {
   emoji: string;
   className?: string;
   size?: number | string;
   alt?: string;
 }
 
-export const AppleEmoji: React.FC<AppleEmojiProps> = ({ 
+export const FluentEmoji: React.FC<FluentEmojiProps> = ({ 
   emoji, 
   className = '', 
   size = '1.25em',
   alt 
 }) => {
   const [hasError, setHasError] = React.useState(false);
-  const src = getAppleEmojiUrl(emoji);
+  const src = getFluentEmojiUrl(emoji);
 
   if (hasError) {
     return <span className={`inline-block select-none ${className}`}>{emoji}</span>;
@@ -96,13 +151,16 @@ export const AppleEmoji: React.FC<AppleEmojiProps> = ({
       loading="lazy"
       decoding="async"
       onError={() => setHasError(true)}
-      className={`inline-block align-[-0.2em] mx-[0.08em] select-none pointer-events-none ${className}`}
+      className={`inline-block align-[-0.22em] mx-[0.08em] select-none pointer-events-none drop-shadow-xs ${className}`}
     />
   );
 };
 
-// Replaces all emojis in a plain text string with AppleEmoji components
-export function renderWithAppleEmojis(text: string): React.ReactNode {
+// Backward-compatible alias for existing components
+export const AppleEmoji = FluentEmoji;
+
+// Replaces all emojis in a plain text string with FluentEmoji components
+export function renderWithFluentEmojis(text: string): React.ReactNode {
   if (!text || typeof text !== 'string') return text;
 
   const parts = text.split(EMOJI_REGEX);
@@ -110,16 +168,19 @@ export function renderWithAppleEmojis(text: string): React.ReactNode {
 
   return parts.map((part, index) => {
     if (index % 2 === 1 && part) {
-      return <AppleEmoji key={`emoji_${index}_${part}`} emoji={part} />;
+      return <FluentEmoji key={`emoji_${index}_${part}`} emoji={part} />;
     }
     return part;
   });
 }
 
+// Backward-compatible alias
+export const renderWithAppleEmojis = renderWithFluentEmojis;
+
 // Recursively replaces emojis in React children
 export function replaceEmojisInReactNode(node: React.ReactNode): React.ReactNode {
   if (typeof node === 'string') {
-    return renderWithAppleEmojis(node);
+    return renderWithFluentEmojis(node);
   }
   if (Array.isArray(node)) {
     return React.Children.map(node, (child) => replaceEmojisInReactNode(child));

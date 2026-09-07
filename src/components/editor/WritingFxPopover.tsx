@@ -237,7 +237,12 @@ export const WritingFxPopover: React.FC<WritingFxPopoverProps> = ({ isOpen, onCl
                 <div>
                   <h3 className="font-bold text-sm text-neutral-950 dark:text-white flex items-center gap-1.5">
                     Writing FX & Cursor Studio
-                    <span className="text-[9px] bg-indigo-600 text-white px-1.5 py-0.2 rounded font-mono font-bold">60 FPS</span>
+                    <span 
+                      className="text-[9px] bg-indigo-600 text-white px-2 py-0.5 rounded font-mono font-bold cursor-help"
+                      title="Hardware-accelerated 2D canvas rendering for lag-free particle effects & carets"
+                    >
+                      ⚡ Smooth 60fps
+                    </span>
                   </h3>
                   <p className="text-[10px] text-neutral-400">Custom caret styles, keystroke physics & live preview</p>
                 </div>

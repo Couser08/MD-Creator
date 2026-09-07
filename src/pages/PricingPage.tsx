@@ -14,6 +14,8 @@ import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
 import { CtaBanner } from '../components/home/CtaBanner';
 
+import { supabase } from '../lib/supabase';
+
 interface PricingTier {
   id: string;
   name: string;
@@ -21,6 +23,7 @@ interface PricingTier {
   monthlyPrice: number;
   annualPrice: number;
   popular?: boolean;
+  comingSoon?: boolean;
   icon: React.ElementType;
   features: string[];
   ctaText: string;
@@ -30,8 +33,8 @@ interface PricingTier {
 const TIERS: PricingTier[] = [
   {
     id: 'free',
-    name: 'Starter',
-    tagline: 'Ideal for solo writers, students, and local note-takers.',
+    name: 'Starter (100% Free)',
+    tagline: 'Ideal for solo writers, students, researchers, and local note-takers.',
     monthlyPrice: 0,
     annualPrice: 0,
     icon: Zap,
@@ -42,7 +45,8 @@ const TIERS: PricingTier[] = [
       'GFM formatting, tables & task checklists',
       'KaTeX LaTeX mathematical equations',
       'Export to Raw Markdown & Clean PDF',
-      'Quick slash block commands (/)',
+      'Client-side WebP image compression studio',
+      'Quick slash block commands (/) & callouts',
       '100% private — data never leaves browser'
     ],
     ctaText: 'Start Writing Free',
@@ -50,24 +54,24 @@ const TIERS: PricingTier[] = [
   },
   {
     id: 'pro',
-    name: 'Pro Writer',
-    tagline: 'For developers, researchers, and professional authors.',
+    name: 'Pro Cloud & Sync',
+    tagline: 'Coming Soon: multi-device cloud sync, web publishing & revision snapshots.',
     monthlyPrice: 8,
     annualPrice: 6.4,
-    popular: true,
+    comingSoon: true,
     icon: Cloud,
     features: [
-      'Everything in Starter',
-      'Supabase Cloud sync across all devices',
+      'Everything in Starter (100% Free Forever)',
+      'Supabase Cloud sync across all your devices',
       'Real-time multi-device cloud backup',
       'Local revision history & 1-click snapshot rollback',
       '1-Click Web Publishing with password protection',
       'Custom tag organization & document library',
-      '8 Curated blueprints & template studio',
-      'Gemini AI Writing Copilot (Coming Soon)'
+      'Curated blueprints & template studio',
+      'Priority early access to all new updates'
     ],
-    ctaText: 'Start Pro Free Trial',
-    ctaAction: '/auth'
+    ctaText: 'Join Pro Waitlist',
+    ctaAction: ''
   },
   {
     id: 'team',
@@ -132,7 +136,29 @@ const FAQS = [
 export const PricingPage: React.FC = () => {
   const [isAnnual, setIsAnnual] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
+  const [waitlistEmail, setWaitlistEmail] = useState('');
+  const [isWaitlistSubmitting, setIsWaitlistSubmitting] = useState(false);
+  const [isWaitlistSubmitted, setIsWaitlistSubmitted] = useState(false);
   const navigate = useNavigate();
+
+  const handleWaitlistSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!waitlistEmail || !waitlistEmail.includes('@')) return;
+    setIsWaitlistSubmitting(true);
+    try {
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('mdwriter_waitlist_email', waitlistEmail);
+      }
+      if (supabase) {
+        await supabase.from('waitlist').insert([{ email: waitlistEmail, plan: 'pro', created_at: new Date().toISOString() }]);
+      }
+    } catch (err) {
+      console.warn('Waitlist registered locally:', err);
+    } finally {
+      setIsWaitlistSubmitting(false);
+      setIsWaitlistSubmitted(true);
+    }
+  };
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
@@ -194,16 +220,25 @@ export const PricingPage: React.FC = () => {
                 <div
                   key={tier.id}
                   className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 ${
-                    tier.popular
+                    tier.id === 'free'
                       ? 'bg-white dark:bg-neutral-900/90 border-2 border-neutral-950 dark:border-white shadow-xl lg:-translate-y-2'
+                      : tier.comingSoon
+                      ? 'bg-neutral-50/50 dark:bg-neutral-900/40 border-2 border-dashed border-amber-300 dark:border-amber-800/80 shadow-sm'
                       : 'bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md'
                   }`}
                 >
-                  {/* Popular Tag */}
-                  {tier.popular && (
+                  {/* Badge */}
+                  {tier.id === 'free' && (
                     <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-amber-400" />
-                      <span>Most Popular</span>
+                      <Sparkles className="w-3 h-3 text-emerald-400" />
+                      <span>100% Free Forever</span>
+                    </div>
+                  )}
+
+                  {tier.comingSoon && (
+                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-neutral-950 text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5">
+                      <Sparkles className="w-3 h-3 text-neutral-950" />
+                      <span>Coming Soon • Waitlist Open</span>
                     </div>
                   )}
 
@@ -249,18 +284,58 @@ export const PricingPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Button */}
-                  <button
-                    onClick={() => navigate(tier.ctaAction)}
-                    className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                      tier.popular
-                        ? 'bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 shadow-md hover:shadow-lg'
-                        : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-200'
-                    }`}
-                  >
-                    <span>{tier.ctaText}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  {/* Button or Waitlist Form */}
+                  {tier.comingSoon ? (
+                    <div className="pt-2">
+                      {isWaitlistSubmitted ? (
+                        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-center">
+                          <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                            <Check className="w-4 h-4" />
+                            <span>You're on the early access list!</span>
+                          </div>
+                          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
+                            We'll ping you before public launch.
+                          </p>
+                        </div>
+                      ) : (
+                        <form onSubmit={handleWaitlistSubmit} className="space-y-2">
+                          <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
+                            <span>Get early access & updates</span>
+                            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">Demand Signal</span>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <input
+                              type="email"
+                              required
+                              value={waitlistEmail}
+                              onChange={(e) => setWaitlistEmail(e.target.value)}
+                              placeholder="Enter your email"
+                              className="flex-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-amber-500"
+                            />
+                            <button
+                              type="submit"
+                              disabled={isWaitlistSubmitting}
+                              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors cursor-pointer shadow-xs shrink-0"
+                            >
+                              {isWaitlistSubmitting ? 'Joining...' : 'Notify Me'}
+                            </button>
+                          </div>
+                        </form>
+                      )}
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => navigate(tier.ctaAction)}
+                      className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer ${
+                        tier.id === 'free'
+                          ? 'bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 shadow-md hover:shadow-lg'
+                          : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-200'
+                      }`}
+                    >
+                      <span>{tier.ctaText}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  )}
                 </div>
               );
             })}

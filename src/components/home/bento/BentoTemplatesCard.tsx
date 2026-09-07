@@ -17,19 +17,19 @@ interface BentoTemplatesCardProps {
 export const BentoTemplatesCard: React.FC<BentoTemplatesCardProps> = ({ onOpenTemplates }) => {
   const templates = [
     {
-      name: 'Class Notes',
+      name: 'Project Brief',
       icon: BookOpen,
       iconColor: 'text-blue-500',
       bgColor: 'bg-blue-50 dark:bg-blue-950/50 border-blue-100 dark:border-blue-900/40',
     },
     {
-      name: 'Resume',
-      icon: User,
+      name: 'Project README',
+      icon: FileText,
       iconColor: 'text-emerald-500',
       bgColor: 'bg-emerald-50 dark:bg-emerald-950/50 border-emerald-100 dark:border-emerald-900/40',
     },
     {
-      name: 'Project Docs',
+      name: 'API Reference',
       icon: FileCode2,
       iconColor: 'text-purple-500',
       bgColor: 'bg-purple-50 dark:bg-purple-950/50 border-purple-100 dark:border-purple-900/40',
@@ -41,14 +41,14 @@ export const BentoTemplatesCard: React.FC<BentoTemplatesCardProps> = ({ onOpenTe
       bgColor: 'bg-amber-50 dark:bg-amber-950/50 border-amber-100 dark:border-amber-900/40',
     },
     {
-      name: 'Blog Post',
+      name: 'Changelog',
       icon: PenTool,
       iconColor: 'text-rose-500',
       bgColor: 'bg-rose-50 dark:bg-rose-950/50 border-rose-100 dark:border-rose-900/40',
     },
     {
-      name: 'Readme',
-      icon: FileText,
+      name: 'Daily Journal',
+      icon: User,
       iconColor: 'text-neutral-600 dark:text-neutral-400',
       bgColor: 'bg-neutral-100 dark:bg-neutral-800 border-neutral-200 dark:border-neutral-700/60',
     },
