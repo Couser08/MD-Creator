@@ -47,11 +47,11 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
   };
 
   return (
-    <div className="relative w-full max-w-[680px] mx-auto select-none pt-14 pb-14 px-2 sm:px-4">
+    <div className="relative w-full max-w-[680px] mx-auto select-none pt-20 pb-20 px-2 sm:px-4">
       
-      {/* 1. Top-Left Floating Card: Fast & Distraction Free (Static, NO bounce) */}
+      {/* 1. Top-Left Floating Card: Fast & Distraction Free */}
       <div className="absolute top-1 left-2 sm:left-6 z-30">
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-[0_10px_25px_rgba(0,0,0,0.06)] dark:shadow-none text-left">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-[0_4px_20px_rgba(0,0,0,0.08),_0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-none text-left">
           <div className="w-7 h-7 rounded-xl bg-blue-50 dark:bg-blue-950/60 border border-blue-100 dark:border-blue-900/60 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">
             <Zap className="w-3.5 h-3.5" />
           </div>
@@ -83,8 +83,8 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
         />
       </svg>
 
-      {/* 2. Top-Right Handwritten Cursive Annotation (Placed safely above-right without overlapping buttons) */}
-      <div className="hidden sm:block absolute top-0 right-0 sm:right-2 z-20 select-none text-right font-handwriting text-neutral-400 dark:text-neutral-500 text-sm sm:text-base leading-[1.2]">
+      {/* 2. Top-Right Handwritten Cursive Annotation — sits within top padding, clear of window topbar */}
+      <div className="hidden sm:block absolute top-2 right-2 z-20 select-none text-right font-handwriting text-neutral-400 dark:text-neutral-500 text-sm sm:text-base leading-[1.3]">
         <div>Write</div>
         <div>Preview</div>
         <div>Export</div>
@@ -115,7 +115,7 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
       </svg>
 
       {/* 3. Main Floating macOS Window Chassis with subtle 3D tilt */}
-      <div className="relative rounded-3xl border border-neutral-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-[0_20px_50px_rgba(0,0,0,0.08)] dark:shadow-none overflow-hidden transition-all lg:[transform:perspective(1200px)_rotateY(-2.5deg)_rotateX(1.5deg)]">
+      <div className="relative rounded-2xl border border-neutral-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-[0_4px_6px_rgba(0,0,0,0.04),_0_10px_25px_rgba(0,0,0,0.07),_0_30px_60px_rgba(0,0,0,0.05)] dark:shadow-none overflow-hidden transition-all lg:[transform:perspective(1200px)_rotateY(-2deg)_rotateX(1deg)]">
         
         {/* Window Topbar */}
         <div className="px-4 py-2.5 bg-white dark:bg-neutral-950 border-b border-neutral-100 dark:border-neutral-850 flex items-center justify-between">
@@ -324,7 +324,7 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
         onClick={onOpenTemplates}
         className="absolute bottom-1 left-0 sm:left-4 z-30 cursor-pointer group/callout"
       >
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-[0_10px_25px_rgba(0,0,0,0.06)] dark:shadow-none text-left hover:border-emerald-400 transition-colors">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-[0_4px_20px_rgba(0,0,0,0.08),_0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-none text-left hover:border-emerald-400 transition-colors">
           <div className="w-7 h-7 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-100 dark:border-emerald-900/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
             <LayoutTemplate className="w-3.5 h-3.5" />
           </div>
@@ -358,12 +358,12 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
         />
       </svg>
 
-      {/* 5. Bottom-Right Floating Card: Export Anywhere (Static, NO bounce) */}
+      {/* 5. Bottom-Right Floating Card: Export Anywhere */}
       <div 
         onClick={onOpenEditor}
-        className="absolute bottom-1 right-0 sm:right-4 z-30 cursor-pointer group/callout"
+        className="absolute bottom-4 right-0 sm:right-4 z-30 cursor-pointer group/callout"
       >
-        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 shadow-[0_10px_25px_rgba(0,0,0,0.06)] dark:shadow-none text-left hover:border-purple-400 transition-colors">
+        <div className="flex items-center gap-2.5 px-3.5 py-2.5 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 shadow-[0_4px_20px_rgba(0,0,0,0.08),_0_1px_3px_rgba(0,0,0,0.05)] dark:shadow-none text-left hover:border-purple-400 transition-colors">
           <div className="w-7 h-7 rounded-xl bg-purple-50 dark:bg-purple-950/60 border border-purple-100 dark:border-purple-900/60 text-purple-600 dark:text-purple-400 flex items-center justify-center shrink-0">
             <UploadCloud className="w-3.5 h-3.5" />
           </div>
@@ -397,32 +397,10 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
         />
       </svg>
 
-      {/* 6. Bottom-Right Handwritten Cursive Annotation */}
-      <div className="hidden lg:block absolute -bottom-5 right-2 sm:right-6 z-20 select-none text-right font-handwriting text-neutral-400 dark:text-neutral-500 text-xs sm:text-sm leading-tight">
-        <div>A better</div>
-        <div>way to write ☆</div>
+      {/* 6. Bottom-Center Handwritten Cursive Annotation — centered to avoid Export card overlap */}
+      <div className="hidden lg:block absolute bottom-2 left-1/2 -translate-x-1/2 z-20 select-none text-center font-handwriting text-neutral-400 dark:text-neutral-500 text-xs sm:text-sm leading-tight whitespace-nowrap">
+        <div>A better way to write ☆</div>
       </div>
-
-      {/* Curved SVG Arrow 5: Handwritten Note -> Upwards towards Export Card */}
-      <svg 
-        className="absolute -bottom-1 right-20 w-8 h-8 text-neutral-400 dark:text-neutral-500 pointer-events-none z-20 hidden lg:block" 
-        viewBox="0 0 30 30" 
-        fill="none"
-      >
-        <path 
-          d="M 22 24 C 18 16, 12 12, 6 6" 
-          stroke="currentColor" 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-        />
-        <path 
-          d="M 14 5 L 6 6 L 7 14" 
-          stroke="currentColor" 
-          strokeWidth="1.5" 
-          strokeLinecap="round" 
-          strokeLinejoin="round" 
-        />
-      </svg>
 
     </div>
   );

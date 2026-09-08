@@ -37,8 +37,8 @@ export const CtaFeatureStrip: React.FC = () => {
   ];
 
   return (
-    <div className="pt-10 sm:pt-14 border-t border-neutral-100 dark:border-neutral-850">
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-6 gap-x-4 lg:gap-x-0 lg:divide-x lg:divide-neutral-150 dark:lg:divide-neutral-850">
+    <div className="pt-10 sm:pt-14 border-t border-neutral-200/70 dark:border-neutral-850">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-y-6 gap-x-4 lg:gap-x-0 lg:divide-x lg:divide-neutral-200/70 dark:lg:divide-neutral-850">
         {features.map((feat) => {
           const Icon = feat.icon;
           return (
@@ -46,7 +46,7 @@ export const CtaFeatureStrip: React.FC = () => {
               key={feat.title}
               className="flex items-center gap-3 px-2 lg:px-6 transition-colors group select-none"
             >
-              <div className="w-10 h-10 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-100/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+              <div className="w-10 h-10 rounded-2xl bg-white dark:bg-blue-950/50 border border-neutral-200/80 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform shadow-sm dark:shadow-none">
                 <Icon className="w-5 h-5 stroke-[1.75]" />
               </div>
               <div className="min-w-0">
@@ -64,3 +64,4 @@ export const CtaFeatureStrip: React.FC = () => {
     </div>
   );
 };
+
