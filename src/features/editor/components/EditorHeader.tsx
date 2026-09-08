@@ -94,40 +94,40 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
   const { isDark, toggleTheme } = useThemeStore();
 
   return (
-    <header className={`h-15 border-b border-neutral-200/80 dark:border-neutral-800/80 px-4 sm:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 select-none z-30 transition-all no-print ${
+    <header className={`h-14 sm:h-15 border-b border-neutral-200/80 dark:border-neutral-800/80 px-3 sm:px-6 flex items-center justify-between bg-white dark:bg-neutral-900 select-none z-30 transition-all no-print ${
       viewMode === 'zen' ? 'opacity-0 hover:opacity-100 duration-200' : ''
     }`}>
-      {/* Zone 1 (Left): Home, Document Switcher, Spacious Title & Subtle Auto-Save Telemetry */}
-      <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+      {/* Zone 1 (Left): Documents Back, Document Switcher, Responsive Title & Save Indicator */}
+      <div className="flex items-center gap-2 sm:gap-4 min-w-0">
         <button
-          onClick={() => navigate('/')}
-          className="p-2 rounded-xl text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer shrink-0"
-          title="Back to Home"
+          onClick={() => navigate('/documents')}
+          className="p-1.5 sm:p-2 rounded-xl text-neutral-500 hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors flex items-center gap-1 text-xs font-semibold cursor-pointer shrink-0"
+          title="Back to Documents"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span className="hidden sm:inline">Home</span>
+          <span className="hidden sm:inline">Docs</span>
         </button>
 
         <button
           onClick={onOpenSwitcher}
-          className="px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300 flex items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
+          className="hidden sm:flex px-2.5 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-medium text-neutral-600 dark:text-neutral-300 items-center gap-1.5 cursor-pointer shrink-0 transition-colors shadow-2xs"
           title="Open Document Switcher (Ctrl+O)"
         >
           <FolderOpen className="w-3.5 h-3.5 text-neutral-400" />
           <span className="hidden md:inline">Open (Ctrl+O)</span>
         </button>
 
-        <div className="h-4 w-px bg-neutral-200 dark:bg-neutral-800 shrink-0" />
+        <div className="hidden sm:block h-4 w-px bg-neutral-200 dark:bg-neutral-800 shrink-0" />
 
         {/* Title & Subtle Saved Dot */}
-        <div className="flex items-center gap-2 min-w-0">
-          <FileText className="w-4 h-4 text-neutral-400 shrink-0" />
+        <div className="flex items-center gap-1.5 min-w-0">
+          <FileText className="w-4 h-4 text-neutral-400 shrink-0 hidden xs:block" />
           <input
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => executeSave(content, title)}
-            className="bg-transparent font-bold text-sm text-neutral-950 dark:text-white focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-600 rounded-lg px-2 py-1 max-w-[140px] sm:max-w-xs md:max-w-sm truncate transition-colors"
+            className="bg-transparent font-bold text-xs sm:text-sm text-neutral-950 dark:text-white focus:outline-none focus:ring-1 focus:ring-neutral-400 dark:focus:ring-neutral-600 rounded-lg px-1.5 sm:px-2 py-1 max-w-[110px] xs:max-w-[140px] sm:max-w-xs md:max-w-sm truncate transition-colors"
             title="Click to rename document"
           />
 
@@ -199,8 +199,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
 
       {/* Zone 3 (Right): Consolidated Action Cluster */}
       <div className="flex items-center gap-2 sm:gap-2.5">
-        {/* Consolidated Tools & Studio Dropdown Menu */}
-        <div className="relative">
+        {/* Consolidated Tools & Studio Dropdown Menu - Hidden on mobile (< md), accessible via mobile toolbar */}
+        <div className="hidden md:block relative">
           <button
             onClick={() => setIsToolsMenuOpen(!isToolsMenuOpen)}
             className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer shadow-2xs ${
@@ -335,8 +335,8 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
           )}
         </div>
 
-        {/* Export Dropdown Menu */}
-        <div className="relative">
+        {/* Export Dropdown Menu - Hidden on mobile (< md), accessible via mobile toolbar */}
+        <div className="hidden md:block relative">
           <button
             onClick={() => setIsExportMenuOpen(!isExportMenuOpen)}
             className="px-3 py-1.5 rounded-xl border border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-700 dark:text-neutral-200 text-xs font-semibold flex items-center gap-1.5 cursor-pointer shadow-2xs"
@@ -415,8 +415,10 @@ export const EditorHeader: React.FC<EditorHeaderProps> = React.memo(({
           ) : null}
         </button>
 
-        {/* PWA Install Button */}
-        <PwaInstallButton variant="compact" />
+        {/* PWA Install Button - Hidden on phone screens to prevent header cramming */}
+        <div className="hidden sm:block">
+          <PwaInstallButton variant="compact" />
+        </div>
 
         {/* Theme Toggle */}
         <button

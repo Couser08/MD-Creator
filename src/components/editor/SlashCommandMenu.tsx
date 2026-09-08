@@ -290,7 +290,10 @@ export const SlashCommandMenu: React.FC<SlashCommandMenuProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div data-slash-menu="true" className="absolute bottom-12 left-6 z-40 w-80 max-w-[90vw] bg-white dark:bg-neutral-900 border border-neutral-200 dark:border-neutral-800 rounded-2xl shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-100 select-none">
+    <div 
+      data-slash-menu="true" 
+      className="fixed md:absolute bottom-0 md:bottom-12 left-0 md:left-6 right-0 md:right-auto z-50 md:z-40 w-full md:w-80 bg-white dark:bg-neutral-900 border-t md:border border-neutral-200 dark:border-neutral-800 rounded-t-3xl md:rounded-2xl shadow-2xl overflow-hidden animate-in slide-in-from-bottom-5 md:zoom-in-95 duration-150 select-none max-h-[70vh]"
+    >
       
       {/* Menu Header with Query Indicator */}
       <div className="px-3.5 py-2 border-b border-neutral-100 dark:border-neutral-800 flex items-center justify-between bg-neutral-50 dark:bg-neutral-950/40 text-xs">

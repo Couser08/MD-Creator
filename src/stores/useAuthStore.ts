@@ -7,6 +7,8 @@ export interface UserProfile {
   displayName: string;
   avatarUrl: string;
   isDemoUser?: boolean;
+  subscriptionTier?: 'free' | 'pro' | 'team';
+  proExpiresAt?: string | null;
 }
 
 interface AuthState {
@@ -18,15 +20,39 @@ interface AuthState {
   demoSignIn: (name?: string, email?: string) => void;
   signOut: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const DEMO_USER_STORAGE_KEY = 'md_writer_demo_user';
 const LOCAL_USERS_STORAGE_KEY = 'md_writer_registered_accounts';
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isLoading: true,
   error: null,
+
+  refreshProfile: async () => {
+    const currentUser = get().user;
+    if (!currentUser || currentUser.isDemoUser || !isSupabaseConfigured() || !supabase) return;
+    try {
+      const { data: prof } = await supabase
+        .from('profiles')
+        .select('subscription_tier, pro_expires_at')
+        .eq('id', currentUser.id)
+        .maybeSingle();
+      if (prof) {
+        set({
+          user: {
+            ...currentUser,
+            subscriptionTier: prof.subscription_tier || 'free',
+            proExpiresAt: prof.pro_expires_at || null,
+          }
+        });
+      }
+    } catch (e) {
+      console.warn('Failed to refresh profile:', e);
+    }
+  },
 
   checkAuth: async () => {
     // 1. Check local demo user first
@@ -47,13 +73,31 @@ export const useAuthStore = create<AuthState>((set) => ({
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
           const u = session.user;
+          let tier: 'free' | 'pro' | 'team' = 'free';
+          let proExpiresAt: string | null = null;
+          try {
+            const { data: prof } = await supabase
+              .from('profiles')
+              .select('subscription_tier, pro_expires_at')
+              .eq('id', u.id)
+              .maybeSingle();
+            if (prof) {
+              tier = prof.subscription_tier || 'free';
+              proExpiresAt = prof.pro_expires_at || null;
+            }
+          } catch (e) {
+            // ignore
+          }
+
           set({
             user: {
               id: u.id,
               email: u.email || '',
               displayName: u.user_metadata?.full_name || u.email?.split('@')[0] || 'Writer',
               avatarUrl: u.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-              isDemoUser: false
+              isDemoUser: false,
+              subscriptionTier: tier,
+              proExpiresAt: proExpiresAt
             },
             isLoading: false
           });

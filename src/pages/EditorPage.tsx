@@ -201,8 +201,8 @@ export const EditorPage: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors ${
-        viewMode === 'zen' ? 'fixed inset-0 z-50 overflow-hidden' : ''
+      className={`h-[100dvh] min-h-[100dvh] flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors overflow-hidden ${
+        viewMode === 'zen' ? 'fixed inset-0 z-50' : ''
       }`}
     >
       {/* Toast Notification */}
@@ -260,38 +260,49 @@ export const EditorPage: React.FC = () => {
         slashQuery={slash.slashQuery}
         onInsertSnippet={slash.handleInsertSnippet}
         onToggleTask={doc.handleToggleTask}
+        onOpenOutline={() => modals.setIsOutlineOpen(true)}
+        onOpenTableBuilder={() => modals.setIsTableBuilderOpen(true)}
+        onOpenTemplates={() => modals.setIsTemplatesOpen(true)}
+        onOpenPdfStudio={() => modals.setIsPdfStudioOpen(true)}
+        onOpenImageModal={() => modals.setIsImageModalOpen(true)}
+        onExportMd={doc.handleExportMd}
+        onCopyMarkdown={doc.handleCopyMarkdown}
+        onOpenRevisions={() => modals.setIsRevisionsOpen(true)}
+        onClearContent={doc.handleClearContent}
       />
 
-      {/* Telemetry Status Bar */}
-      <EditorStatusBar
-        viewMode={viewMode}
-        cursorPos={cursorPos}
-        lineCount={stats.lines}
-        wordCount={stats.words}
-        charCount={stats.chars}
-        readingTime={stats.reading}
-        isTypewriterMode={modals.isTypewriterMode}
-        onToggleTypewriter={() => {
-          const next = !modals.isTypewriterMode;
-          modals.setIsTypewriterMode(next);
-          showToast(next ? 'Typewriter Mode Activated' : 'Typewriter Mode Off', 1500);
-        }}
-        isSprintActive={sprint.isSprintActive}
-        sprintDuration={sprint.sprintDuration}
-        sprintSecondsRemaining={sprint.sprintSecondsRemaining}
-        sprintStartWordCount={sprint.sprintStartWordCount}
-        formatSprintTime={sprint.formatSprintTime}
-        isSprintPopoverOpen={modals.isSprintPopoverOpen}
-        setIsSprintPopoverOpen={modals.setIsSprintPopoverOpen}
-        onStartSprint={(mins) => {
-          sprint.handleStartSprint(mins);
-          modals.setIsSprintPopoverOpen(false);
-        }}
-        onPauseSprint={sprint.handlePauseSprint}
-        onResetSprint={sprint.handleResetSprint}
-        onOpenUpdates={() => modals.setIsUpdatesOpen(true)}
-        onOpenSwitcher={() => modals.setIsSwitcherOpen(true)}
-      />
+      {/* Telemetry Status Bar - Hidden on mobile (< md) to maximize writing area */}
+      <div className="hidden md:block">
+        <EditorStatusBar
+          viewMode={viewMode}
+          cursorPos={cursorPos}
+          lineCount={stats.lines}
+          wordCount={stats.words}
+          charCount={stats.chars}
+          readingTime={stats.reading}
+          isTypewriterMode={modals.isTypewriterMode}
+          onToggleTypewriter={() => {
+            const next = !modals.isTypewriterMode;
+            modals.setIsTypewriterMode(next);
+            showToast(next ? 'Typewriter Mode Activated' : 'Typewriter Mode Off', 1500);
+          }}
+          isSprintActive={sprint.isSprintActive}
+          sprintDuration={sprint.sprintDuration}
+          sprintSecondsRemaining={sprint.sprintSecondsRemaining}
+          sprintStartWordCount={sprint.sprintStartWordCount}
+          formatSprintTime={sprint.formatSprintTime}
+          isSprintPopoverOpen={modals.isSprintPopoverOpen}
+          setIsSprintPopoverOpen={modals.setIsSprintPopoverOpen}
+          onStartSprint={(mins) => {
+            sprint.handleStartSprint(mins);
+            modals.setIsSprintPopoverOpen(false);
+          }}
+          onPauseSprint={sprint.handlePauseSprint}
+          onResetSprint={sprint.handleResetSprint}
+          onOpenUpdates={() => modals.setIsUpdatesOpen(true)}
+          onOpenSwitcher={() => modals.setIsSwitcherOpen(true)}
+        />
+      </div>
 
       {/* Lazily Mounted Heavy Modals & Drawers */}
       <EditorModalsContainer

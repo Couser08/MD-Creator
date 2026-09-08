@@ -107,10 +107,10 @@ export const DocumentsPage: React.FC = () => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <button
               onClick={() => setIsTemplatesOpen(true)}
-              className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <LayoutTemplate className="w-4 h-4 text-emerald-500" />
               <span>Templates</span>
@@ -118,7 +118,7 @@ export const DocumentsPage: React.FC = () => {
 
             <button
               onClick={() => fileInputRef.current?.click()}
-              className="px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
+              className="flex-1 sm:flex-initial justify-center px-3.5 sm:px-4 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-xs font-semibold text-neutral-700 dark:text-neutral-300 flex items-center gap-1.5 transition-colors cursor-pointer"
             >
               <Upload className="w-4 h-4" />
               <span>Import .md</span>
@@ -133,7 +133,7 @@ export const DocumentsPage: React.FC = () => {
 
             <button
               onClick={handleCreateNew}
-              className="px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
+              className="w-full sm:w-auto justify-center px-4 py-2 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-xs font-bold shadow-sm flex items-center gap-1.5 transition-all cursor-pointer"
             >
               <Plus className="w-4 h-4" />
               <span>New Document</span>

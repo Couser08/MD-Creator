@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
-import { Columns, Sparkles, Minimize2, UploadCloud } from 'lucide-react';
+import React, { useState, useCallback } from 'react';
+import { Columns, Sparkles, Minimize2, UploadCloud, PenTool, Eye } from 'lucide-react';
 import { ViewMode } from '../types';
 import { SlashCommandMenu } from '../../../components/editor/SlashCommandMenu';
 import { MarkdownPreview } from '../../../components/editor/MarkdownPreview';
 import { EditorWritingFx } from '../../../components/editor/EditorWritingFx';
-import { optimizeImage } from '../../../utils/imageCompressor';
+import { MobileEditorToolbar } from './MobileEditorToolbar';
+import { storeOptimizedImage } from '../../../services/imageStorageService';
 
 interface EditorWorkspaceProps {
   viewMode: ViewMode;
@@ -21,6 +22,16 @@ interface EditorWorkspaceProps {
   slashQuery: string;
   onInsertSnippet: (snippet: string) => void;
   onToggleTask: (taskIndex: number, currentChecked: boolean) => void;
+  // Studio & Action Callbacks for Mobile Toolbar
+  onOpenOutline?: () => void;
+  onOpenTableBuilder?: () => void;
+  onOpenTemplates?: () => void;
+  onOpenPdfStudio?: () => void;
+  onOpenImageModal?: () => void;
+  onExportMd?: () => void;
+  onCopyMarkdown?: () => void;
+  onOpenRevisions?: () => void;
+  onClearContent?: () => void;
 }
 
 export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
@@ -38,8 +49,94 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
   slashQuery,
   onInsertSnippet,
   onToggleTask,
+  onOpenOutline,
+  onOpenTableBuilder,
+  onOpenTemplates,
+  onOpenPdfStudio,
+  onOpenImageModal,
+  onExportMd,
+  onCopyMarkdown,
+  onOpenRevisions,
+  onClearContent,
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [mobileTab, setMobileTab] = useState<'edit' | 'preview'>('edit');
+
+  // Dedicated formatting helper that preserves scroll position and prevents mobile focus jumping
+  const insertFormatting = useCallback(
+    (formatFn: (selected: string) => { text: string; selectOffset: number; selectLength: number }) => {
+      const ta = textareaRef.current;
+      if (!ta) return;
+
+      const savedScrollTop = ta.scrollTop;
+      const start = ta.selectionStart ?? 0;
+      const end = ta.selectionEnd ?? 0;
+      const selected = content.substring(start, end);
+
+      const { text, selectOffset, selectLength } = formatFn(selected);
+      const nextContent = content.substring(0, start) + text + content.substring(end);
+
+      // Programmatically update value via prototype setter so React picks up the change
+      const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLTextAreaElement.prototype, 'value')?.set;
+      if (nativeSetter) {
+        nativeSetter.call(ta, nextContent);
+      } else {
+        ta.value = nextContent;
+      }
+      ta.dispatchEvent(new Event('input', { bubbles: true }));
+
+      // Immediately focus with preventScroll: true
+      ta.focus({ preventScroll: true });
+      const newStart = start + selectOffset;
+      const newEnd = newStart + selectLength;
+      ta.setSelectionRange(newStart, newEnd);
+      ta.scrollTop = savedScrollTop;
+
+      // Second frame protection for mobile virtual keyboard reflow
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.scrollTop = savedScrollTop;
+        }
+      });
+    },
+    [content, textareaRef]
+  );
+
+  // Insert bold syntax at cursor without scroll jumping
+  const handleInsertBold = useCallback(() => {
+    insertFormatting((selected) => {
+      if (selected) {
+        return {
+          text: `**${selected}**`,
+          selectOffset: 2,
+          selectLength: selected.length,
+        };
+      }
+      return {
+        text: `**bold text**`,
+        selectOffset: 2,
+        selectLength: 9,
+      };
+    });
+  }, [insertFormatting]);
+
+  // Insert link syntax at cursor without scroll jumping
+  const handleInsertLink = useCallback(() => {
+    insertFormatting((selected) => {
+      if (selected) {
+        return {
+          text: `[${selected}](https://example.com)`,
+          selectOffset: selected.length + 3,
+          selectLength: 19,
+        };
+      }
+      return {
+        text: `[link text](https://example.com)`,
+        selectOffset: 1,
+        selectLength: 9,
+      };
+    });
+  }, [insertFormatting]);
 
   // Handle direct clipboard paste (Ctrl+V) of screenshots or image files
   const handlePaste = async (e: React.ClipboardEvent<HTMLTextAreaElement>) => {
@@ -52,8 +149,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
         if (file) {
           e.preventDefault();
           try {
-            const result = await optimizeImage(file, 'pasted-image.png');
-            onInsertSnippet(`\n![Pasted image](${result.dataUrl})\n`);
+            const stored = await storeOptimizedImage(file, 'pasted-image.png');
+            onInsertSnippet(`\n${stored.markdownTag}\n`);
           } catch (err) {
             console.error('Failed to optimize pasted image:', err);
           }
@@ -82,9 +179,8 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
         e.preventDefault();
         setIsDraggingOver(false);
         try {
-          const cleanName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-          const result = await optimizeImage(file, file.name);
-          onInsertSnippet(`\n![${cleanName}](${result.dataUrl})\n`);
+          const stored = await storeOptimizedImage(file, file.name);
+          onInsertSnippet(`\n${stored.markdownTag}\n`);
         } catch (err) {
           console.error('Failed to optimize dropped image:', err);
         }
@@ -93,6 +189,10 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
     }
     setIsDraggingOver(false);
   };
+
+  // Determine visibility of editor and preview panes on mobile (< 768px) vs desktop (>= 768px)
+  const isEditorVisibleOnMobile = viewMode === 'write' || viewMode === 'zen' || (viewMode === 'split' && mobileTab === 'edit');
+  const isPreviewVisibleOnMobile = viewMode === 'read' || (viewMode === 'split' && mobileTab === 'preview');
 
   return (
     <>
@@ -112,17 +212,49 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
         </div>
       )}
 
+      {/* Mobile-Only Edit / Preview Segmented Tab Bar (< 768px) */}
+      {viewMode === 'split' && (
+        <div className="md:hidden flex items-center justify-center py-2 px-4 bg-neutral-100/90 dark:bg-neutral-900/90 border-b border-neutral-200 dark:border-neutral-800 select-none z-20">
+          <div className="inline-flex rounded-xl bg-neutral-200/80 dark:bg-neutral-800 p-0.5 text-xs font-semibold">
+            <button
+              onClick={() => setMobileTab('edit')}
+              className={`px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                mobileTab === 'edit'
+                  ? 'bg-white dark:bg-neutral-700 text-neutral-950 dark:text-white shadow-xs font-bold'
+                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <PenTool className="w-3.5 h-3.5" />
+              <span>Edit Markdown</span>
+            </button>
+            <button
+              onClick={() => setMobileTab('preview')}
+              className={`px-4 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer ${
+                mobileTab === 'preview'
+                  ? 'bg-white dark:bg-neutral-700 text-neutral-950 dark:text-white shadow-xs font-bold'
+                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+              }`}
+            >
+              <Eye className="w-3.5 h-3.5" />
+              <span>Preview</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Main Split / Single Pane Viewport */}
-      <div className="flex-1 flex overflow-hidden relative">
+      <div className="flex-1 flex overflow-hidden relative pb-14 md:pb-0">
         {/* Left Pane: Editor */}
         {(viewMode === 'split' || viewMode === 'write' || viewMode === 'zen') && (
           <div
             className={`editor-pane-container flex flex-col h-full bg-neutral-50/70 dark:bg-[#18181c] text-neutral-800 dark:text-neutral-200 transition-colors ${
-              viewMode === 'split' ? 'w-full md:w-1/2 border-r border-neutral-200 dark:border-neutral-800' : 'w-full'
+              viewMode === 'split'
+                ? `w-full md:w-1/2 border-r border-neutral-200 dark:border-neutral-800 ${isEditorVisibleOnMobile ? 'flex' : 'hidden md:flex'}`
+                : 'w-full'
             }`}
           >
-            {/* Editor Sub-header Bar */}
-            <div className="px-4 py-2 bg-neutral-100/80 dark:bg-[#1e1e24] border-b border-neutral-200 dark:border-neutral-800 flex items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 select-none no-print transition-colors">
+            {/* Editor Sub-header Bar - Hidden on mobile (< md) to maximize writing area */}
+            <div className="hidden md:flex px-4 py-2 bg-neutral-100/80 dark:bg-[#1e1e24] border-b border-neutral-200 dark:border-neutral-800 items-center justify-between text-xs text-neutral-500 dark:text-neutral-400 select-none no-print transition-colors">
               <span className="flex items-center gap-1.5 font-medium text-neutral-700 dark:text-neutral-300">
                 <span className="w-2 h-2 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                 <span>Raw Markdown</span>
@@ -201,11 +333,13 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
         {(viewMode === 'split' || viewMode === 'read') && (
           <div
             className={`preview-pane-container flex flex-col h-full bg-white dark:bg-neutral-950 overflow-y-auto transition-all ${
-              viewMode === 'split' ? 'hidden md:flex md:w-1/2' : 'w-full'
+              viewMode === 'split'
+                ? `w-full md:w-1/2 ${isPreviewVisibleOnMobile ? 'flex' : 'hidden md:flex'}`
+                : 'w-full'
             }`}
           >
-            {/* Preview Sub-header */}
-            <div className="px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 flex items-center justify-between text-xs text-neutral-500 select-none no-print">
+            {/* Preview Sub-header - Hidden on mobile (< md) to maximize preview height */}
+            <div className="hidden md:flex px-5 py-2 border-b border-neutral-100 dark:border-neutral-800 bg-neutral-50/70 dark:bg-neutral-900/50 items-center justify-between text-xs text-neutral-500 select-none no-print">
               <span className="flex items-center gap-1.5 font-semibold text-neutral-700 dark:text-neutral-300">
                 <Columns className="w-3.5 h-3.5" />
                 Live Rendered Preview
@@ -229,6 +363,22 @@ export const EditorWorkspace: React.FC<EditorWorkspaceProps> = React.memo(({
           </div>
         )}
       </div>
+
+      {/* Mobile Sticky Bottom Accessory Toolbar */}
+      <MobileEditorToolbar
+        onInsertBold={handleInsertBold}
+        onInsertLink={handleInsertLink}
+        onOpenImageModal={onOpenImageModal || (() => {})}
+        onTriggerSlash={() => setIsSlashMenuOpen((prev) => !prev)}
+        onOpenOutline={onOpenOutline || (() => {})}
+        onOpenTableBuilder={onOpenTableBuilder || (() => {})}
+        onOpenTemplates={onOpenTemplates || (() => {})}
+        onOpenPdfStudio={onOpenPdfStudio || (() => {})}
+        onExportMd={onExportMd || (() => {})}
+        onCopyMarkdown={onCopyMarkdown || (() => {})}
+        onOpenRevisions={onOpenRevisions || (() => {})}
+        onClearContent={onClearContent || (() => {})}
+      />
 
       {/* 60FPS Hardware-Accelerated Editor Typing FX Overlay */}
       <EditorWritingFx textareaRef={textareaRef} />

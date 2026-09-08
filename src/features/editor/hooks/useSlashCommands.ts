@@ -126,9 +126,11 @@ export function useSlashCommands({
         executeSave(nextContent, title);
         setTimeout(() => {
           if (textareaRef.current) {
-            textareaRef.current.focus();
+            const prevScroll = textareaRef.current.scrollTop;
+            textareaRef.current.focus({ preventScroll: true });
             const newPos = yamlBlock.length;
             textareaRef.current.setSelectionRange(newPos, newPos);
+            textareaRef.current.scrollTop = prevScroll;
             updateCursorPosition();
           }
         }, 20);
@@ -143,9 +145,11 @@ export function useSlashCommands({
 
       setTimeout(() => {
         if (textareaRef.current) {
-          textareaRef.current.focus();
+          const prevScroll = textareaRef.current.scrollTop;
+          textareaRef.current.focus({ preventScroll: true });
           const newPos = cleanBefore.length + snippet.length;
           textareaRef.current.setSelectionRange(newPos, newPos);
+          textareaRef.current.scrollTop = prevScroll;
           updateCursorPosition();
         }
       }, 20);

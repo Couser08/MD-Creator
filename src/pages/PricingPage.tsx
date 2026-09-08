@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   Check, 
@@ -8,107 +8,42 @@ import {
   ChevronDown, 
   Zap, 
   Cloud, 
-  Users 
+  Users,
+  Tag,
+  Copy,
+  Gift,
+  AlertCircle
 } from 'lucide-react';
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
 import { CtaBanner } from '../components/home/CtaBanner';
-import { supabase } from '../lib/supabase';
 import { useAuthStore } from '../stores/useAuthStore';
 import { WaitlistSuccessModal } from '../components/common/WaitlistSuccessModal';
 import { WaitlistAdminPanel } from '../components/pricing/WaitlistAdminPanel';
-
-interface PricingTier {
-  id: string;
-  name: string;
-  tagline: string;
-  monthlyPrice: number;
-  annualPrice: number;
-  popular?: boolean;
-  comingSoon?: boolean;
-  icon: React.ElementType;
-  features: string[];
-  ctaText: string;
-  ctaAction: string;
-}
-
-const TIERS: PricingTier[] = [
-  {
-    id: 'free',
-    name: 'Starter (100% Free)',
-    tagline: 'Ideal for solo writers, students, researchers, and local note-takers.',
-    monthlyPrice: 0,
-    annualPrice: 0,
-    icon: Zap,
-    features: [
-      'Unlimited local Markdown documents',
-      'Dexie.js IndexedDB instant offline cache',
-      'Live dual-pane split view + Zen mode',
-      'GFM formatting, tables & task checklists',
-      'KaTeX LaTeX mathematical equations',
-      'Export to Raw Markdown & Clean PDF',
-      'Client-side WebP image compression studio',
-      'Quick slash block commands (/) & callouts',
-      '100% private — data never leaves browser'
-    ],
-    ctaText: 'Start Writing Free',
-    ctaAction: '/editor'
-  },
-  {
-    id: 'pro',
-    name: 'Pro Cloud & Sync',
-    tagline: 'Coming Soon: multi-device cloud sync, web publishing & revision snapshots.',
-    monthlyPrice: 8,
-    annualPrice: 6.4,
-    comingSoon: true,
-    icon: Cloud,
-    features: [
-      'Everything in Starter (100% Free Forever)',
-      'Supabase Cloud sync across all your devices',
-      'Real-time multi-device cloud backup',
-      'Local revision history & 1-click snapshot rollback',
-      '1-Click Web Publishing with password protection',
-      'Custom tag organization & document library',
-      'Curated blueprints & template studio',
-      'Priority early access to all new updates'
-    ],
-    ctaText: 'Join Pro Waitlist',
-    ctaAction: ''
-  },
-  {
-    id: 'team',
-    name: 'Team & Studio',
-    tagline: 'For engineering teams, documentation squads, and studios.',
-    monthlyPrice: 19,
-    annualPrice: 15.2,
-    icon: Users,
-    features: [
-      'Everything in Pro Writer',
-      'Real-Time Multiplayer Collaboration (Live Presence)',
-      'Shared team workspace & collaborative folders',
-      'Role-based permissions (Admin, Editor, Viewer)',
-      'Centralized team license & billing management',
-      'Team shared templates & style guides',
-      'SSO & SAML authentication integration',
-      'Dedicated 99.9% uptime SLA & account manager'
-    ],
-    ctaText: 'Contact Sales',
-    ctaAction: '/auth'
-  }
-];
+import { 
+  detectUserRegion, 
+  RegionalPricing, 
+  checkUserWaitlistStatus, 
+  joinEarlybirdWaitlist, 
+  redeemCouponCode, 
+  getRemainingWaitlistSeats, 
+  WaitlistStatus 
+} from '../services/couponService';
 
 const COMPARISON_ROWS = [
   { feature: 'Local Offline Storage (IndexedDB)', free: true, pro: true, team: true },
   { feature: 'Markdown & KaTeX Math Rendering', free: true, pro: true, team: true },
-  { feature: 'Export to PDF & Markdown (.md)', free: true, pro: true, team: true },
-  { feature: 'Slash Block Commands (/) & Callouts', free: true, pro: true, team: true },
-  { feature: 'Curated Markdown Blueprint Templates', free: true, pro: true, team: true },
-  { feature: 'Local Revision History & Snapshots', free: true, pro: true, team: true },
+  { feature: 'Basic PDF & Clean Markdown Export', free: true, pro: true, team: true },
+  { feature: 'Native Slash Commands (/) & Fast Formatting', free: true, pro: true, team: true },
+  { feature: 'Curated Starter Blueprint Templates (8)', free: true, pro: true, team: true },
+  { feature: 'Client-Side WebP Image Compression', free: true, pro: true, team: true },
   { feature: 'Supabase Multi-Device Cloud Sync', free: false, pro: true, team: true },
+  { feature: 'Publication-Grade PDF (Custom Cover & TOC)', free: false, pro: true, team: true },
+  { feature: 'Full & Unlimited Template Library', free: false, pro: true, team: true },
+  { feature: 'Local Checkpoints & Version History', free: false, pro: true, team: true },
   { feature: '1-Click Web Publishing & Passwords', free: false, pro: true, team: true },
   { feature: 'Real-Time Multiplayer Collaboration', free: false, pro: false, team: true },
   { feature: 'Shared Team Workspace & Tags', free: false, pro: false, team: true },
-  { feature: 'SSO & Enterprise SAML Login', free: false, pro: false, team: true },
   { feature: 'Support Level', free: 'Community', pro: 'Priority Email', team: 'Dedicated 24/7' }
 ];
 
@@ -118,238 +53,493 @@ const FAQS = [
     a: 'Yes! The Starter plan is 100% free and offline-first. Your documents are stored safely inside your browser using IndexedDB (Dexie.js). You do not need to register, log in, or install anything.'
   },
   {
-    q: 'How does Supabase cloud synchronization work?',
-    a: 'When you connect your Supabase account or upgrade to Pro, every edit is debounced and synchronized to your personal PostgreSQL database on Supabase. This gives you instant multi-device backup without lock-in.'
+    q: 'How does the Earlybird 1-time coupon reward work?',
+    a: 'When you claim one of our 100 limited Earlybird spots, you receive a unique one-time coupon (e.g. EARLYBIRD-XXXXX) bound to your account. Redeeming it on the Monthly plan grants 1 month of Pro completely free. Redeeming it on the Annual plan stacks an extra 2 months of free Pro on top of our 20% annual discount.'
+  },
+  {
+    q: 'How does Supabase multi-device cloud synchronization work?',
+    a: 'When you upgrade to Pro and connect your account, every edit is debounced and synchronized securely to your personal PostgreSQL database on Supabase. This delivers instant multi-device backup with last-write-wins resolution.'
+  },
+  {
+    q: 'How is Regional / PPP pricing validated?',
+    a: 'We show display currencies based on Geo-IP detection (with fallback to US $8). At checkout, payment processors (such as Stripe Adaptive Pricing / Paddle) validate your card billing country to prevent currency arbitrage while granting equitable access across India, SEA, and Latin America.'
   },
   {
     q: 'What happens to my documents if I cancel my subscription?',
     a: 'You never lose access to your data. All documents are stored in open Markdown format and remain accessible in your local browser storage. You can export all your files anytime with one click.'
   },
   {
-    q: 'Do you offer educational or open-source discounts?',
-    a: 'Yes! We offer a 50% discount on Pro Writer for verified students, educators, and open-source project maintainers. Reach out to our team with your student or GitHub credentials.'
-  },
-  {
     q: 'Can I export to PDF without any watermark or ads?',
-    a: 'Absolutely. MD Writer uses a publication-grade print stylesheet that forces clean white paper, crisp serif/sans typography, and removes all UI chrome and buttons.'
+    a: 'Absolutely. Starter gives clean print PDF export. Pro upgrades you to our publication studio with custom cover designs, dynamic table of contents, and custom branding.'
   }
 ];
 
 export const PricingPage: React.FC = () => {
-  const { user } = useAuthStore();
+  const { user, refreshProfile } = useAuthStore();
+  const navigate = useNavigate();
+
+  // Regional & Currency State
+  const [region] = useState<RegionalPricing>(detectUserRegion);
   const [isAnnual, setIsAnnual] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
-  const [waitlistEmail, setWaitlistEmail] = useState('');
-  const [isWaitlistSubmitting, setIsWaitlistSubmitting] = useState(false);
-  const [isWaitlistSubmitted, setIsWaitlistSubmitted] = useState(false);
+
+  // Earlybird Waitlist & Coupon State
+  const [waitlistStatus, setWaitlistStatus] = useState<WaitlistStatus>({ hasJoined: false });
+  const [remainingSeats, setRemainingSeats] = useState<number | null>(null);
+  const [isSubmittingWaitlist, setIsSubmittingWaitlist] = useState(false);
   const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
-  const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
-  const navigate = useNavigate();
+  const [lastAssignedCode, setLastAssignedCode] = useState<string | null>(null);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
+
+  // Coupon Redemption State
+  const [redeemInput, setRedeemInput] = useState('');
+  const [isRedeeming, setIsRedeeming] = useState(false);
+  const [redeemFeedback, setRedeemFeedback] = useState<{ success: boolean; message: string } | null>(null);
 
   const isAdmin = user?.email?.toLowerCase() === 'tungariyarahul08@gmail.com';
 
-  const handleWaitlistSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!waitlistEmail || !waitlistEmail.includes('@')) return;
-    const submitted = waitlistEmail;
-    setIsWaitlistSubmitting(true);
-    try {
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mdwriter_waitlist_email', submitted);
+  // Check waitlist status and remaining seats on mount and when auth state changes
+  useEffect(() => {
+    checkUserWaitlistStatus(user?.id, user?.email).then((status) => {
+      setWaitlistStatus(status);
+      if (status.couponCode) {
+        setLastAssignedCode(status.couponCode);
       }
-      if (supabase) {
-        await supabase.from('waitlist').insert([{ email: submitted, plan: 'pro', created_at: new Date().toISOString() }]);
+    });
+
+    getRemainingWaitlistSeats().then((seats) => {
+      setRemainingSeats(seats);
+    });
+  }, [user?.id, user?.email]);
+
+  const handleClaimWaitlistSpot = async () => {
+    if (!user) {
+      // Must be logged in to bind coupon to user_id
+      navigate('/auth?redirect=/pricing&intent=waitlist');
+      return;
+    }
+
+    setIsSubmittingWaitlist(true);
+    try {
+      const res = await joinEarlybirdWaitlist(user.id, user.email);
+      if (res.success && res.couponCode) {
+        setLastAssignedCode(res.couponCode);
+        setWaitlistStatus({
+          hasJoined: true,
+          couponCode: res.couponCode,
+          status: 'unused'
+        });
+        setRemainingSeats((prev) => (prev !== null ? Math.max(0, prev - 1) : 99));
+        setIsSuccessModalOpen(true);
       }
     } catch (err) {
-      console.warn('Waitlist registered locally:', err);
+      console.warn('Failed to claim waitlist spot:', err);
     } finally {
-      setIsWaitlistSubmitting(false);
-      setIsWaitlistSubmitted(true);
-      setLastSubmittedEmail(submitted);
-      setIsSuccessModalOpen(true);
-      setWaitlistEmail('');
+      setIsSubmittingWaitlist(false);
     }
   };
+
+  const handleRedeemCouponSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!redeemInput.trim()) return;
+    if (!user) {
+      navigate('/auth?redirect=/pricing&intent=redeem');
+      return;
+    }
+
+    setIsRedeeming(true);
+    setRedeemFeedback(null);
+    try {
+      const res = await redeemCouponCode(redeemInput.trim(), isAnnual ? 'annual' : 'monthly');
+      if (res.success) {
+        setRedeemFeedback({
+          success: true,
+          message: res.message || 'Pro activated successfully!'
+        });
+        setRedeemInput('');
+        await refreshProfile();
+      } else {
+        setRedeemFeedback({
+          success: false,
+          message: res.error || 'Failed to redeem coupon code.'
+        });
+      }
+    } catch (err: any) {
+      setRedeemFeedback({
+        success: false,
+        message: err?.message || 'Error processing redemption.'
+      });
+    } finally {
+      setIsRedeeming(false);
+    }
+  };
+
+  const handleCopyCoupon = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCoupon(true);
+    setTimeout(() => setCopiedCoupon(false), 2000);
+  };
+
+  // Pricing calculations
+  const proMonthly = region.monthlyPrice;
+  const proAnnual = region.annualPrice;
+  const proDisplayPrice = isAnnual ? proAnnual : proMonthly;
+
+  const teamMonthly = region.regionId === 'IN' ? 799 : 19;
+  const teamAnnual = region.regionId === 'IN' ? 639 : 15.2;
+  const teamDisplayPrice = isAnnual ? teamAnnual : teamMonthly;
+
+  const seatsClaimedPercent = remainingSeats !== null 
+    ? Math.min(100, Math.max(0, ((100 - remainingSeats) / 100) * 100))
+    : 0;
 
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
       <Navbar />
 
       <main className="flex-1">
-        
         {/* Header Hero Section */}
         <section className="pt-16 pb-12 sm:pt-20 sm:pb-16 text-center max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 text-xs font-semibold text-blue-700 dark:text-blue-300 mb-5 shadow-2xs">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/40 border border-blue-100 dark:border-blue-900/60 text-xs font-semibold text-blue-700 dark:text-blue-300 mb-5 shadow-2xs">
             <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
-            <span>Simple, Transparent Pricing</span>
+            <span>Simple, Transparent &amp; Fair Regional Pricing</span>
           </div>
 
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black text-neutral-950 dark:text-white tracking-tight mb-5 leading-tight">
             Write for free forever.<br />Upgrade when you need cloud sync.
           </h1>
 
-          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-10">
-            No forced subscriptions for basic markdown writing. Enjoy an offline-first experience with optional cloud superpowers.
+          <p className="text-base sm:text-lg text-neutral-600 dark:text-neutral-400 max-w-2xl mx-auto leading-relaxed mb-8">
+            No locked basic markdown features. Enjoy a fast offline-first editor with optional multi-device cloud superpowers.
           </p>
 
           {/* Billing Cycle Toggle */}
-          <div className="inline-flex items-center p-1 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-xs font-semibold select-none">
-            <button
-              onClick={() => setIsAnnual(false)}
-              className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
-                !isAnnual
-                  ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-2xs'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              Monthly Billing
-            </button>
-            <button
-              onClick={() => setIsAnnual(true)}
-              className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
-                isAnnual
-                  ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-2xs'
-                  : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
-              }`}
-            >
-              <span>Annual Billing</span>
-              <span className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800">
-                Save 20%
-              </span>
-            </button>
+          <div className="flex flex-col items-center justify-center gap-2 mb-10">
+            <div className="inline-flex items-center p-1 rounded-2xl bg-neutral-100 dark:bg-neutral-900 border border-neutral-200/80 dark:border-neutral-800 text-xs font-semibold select-none">
+              <button
+                onClick={() => setIsAnnual(false)}
+                className={`px-4 py-2 rounded-xl transition-all cursor-pointer ${
+                  !isAnnual
+                    ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-2xs'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                Monthly Billing
+              </button>
+              <button
+                onClick={() => setIsAnnual(true)}
+                className={`px-4 py-2 rounded-xl transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isAnnual
+                    ? 'bg-white dark:bg-neutral-800 text-neutral-950 dark:text-white shadow-2xs'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white'
+                }`}
+              >
+                <span>Annual Billing</span>
+                <span className="bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-200/60 dark:border-emerald-800">
+                  Save 20%
+                </span>
+              </button>
+            </div>
           </div>
         </section>
 
         {/* 3 Pricing Cards Grid */}
-        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-stretch">
-            {TIERS.map((tier) => {
-              const Icon = tier.icon;
-              const price = isAnnual ? tier.annualPrice : tier.monthlyPrice;
+            {/* Starter Plan */}
+            <div className="relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 bg-white dark:bg-neutral-900/90 border-2 border-neutral-950 dark:border-white shadow-xl lg:-translate-y-2">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-[11px] font-bold px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-emerald-400" />
+                <span>100% Free Forever</span>
+              </div>
 
-              return (
-                <div
-                  key={tier.id}
-                  className={`relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 ${
-                    tier.id === 'free'
-                      ? 'bg-white dark:bg-neutral-900/90 border-2 border-neutral-950 dark:border-white shadow-xl lg:-translate-y-2'
-                      : tier.comingSoon
-                      ? 'bg-neutral-50/50 dark:bg-neutral-900/40 border-2 border-dashed border-amber-300 dark:border-amber-800/80 shadow-sm'
-                      : 'bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md'
-                  }`}
-                >
-                  {/* Badge */}
-                  {tier.id === 'free' && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 text-[11px] font-bold px-3 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1">
-                      <Sparkles className="w-3 h-3 text-emerald-400" />
-                      <span>100% Free Forever</span>
-                    </div>
-                  )}
-
-                  {tier.comingSoon && (
-                    <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-neutral-950 text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5">
-                      <Sparkles className="w-3 h-3 text-neutral-950" />
-                      <span>Coming Soon • Waitlist Open</span>
-                    </div>
-                  )}
-
-                  <div>
-                    {/* Header */}
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200">
-                        <Icon className="w-5 h-5" />
-                      </div>
-                      <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">
-                        {tier.id.toUpperCase()}
-                      </span>
-                    </div>
-
-                    <h3 className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight mb-2">
-                      {tier.name}
-                    </h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 min-h-[34px] leading-relaxed mb-6">
-                      {tier.tagline}
-                    </p>
-
-                    {/* Price */}
-                    <div className="flex items-baseline gap-1 mb-6 pb-6 border-b border-neutral-100 dark:border-neutral-800">
-                      <span className="text-4xl sm:text-5xl font-black text-neutral-950 dark:text-white tracking-tight">
-                        ${price === 0 ? '0' : price.toFixed(2)}
-                      </span>
-                      <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
-                        {tier.monthlyPrice === 0 ? 'forever' : isAnnual ? '/ month, billed annually' : '/ month'}
-                      </span>
-                    </div>
-
-                    {/* Features List */}
-                    <div className="space-y-3 mb-8">
-                      <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">
-                        What's Included:
-                      </div>
-                      {tier.features.map((feat, idx) => (
-                        <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-700 dark:text-neutral-300">
-                          <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
-                          <span>{feat}</span>
-                        </div>
-                      ))}
-                    </div>
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200">
+                    <Zap className="w-5 h-5" />
                   </div>
-
-                  {/* Button or Waitlist Form */}
-                  {tier.comingSoon ? (
-                    <div className="pt-2">
-                      {isWaitlistSubmitted ? (
-                        <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 text-center">
-                          <div className="flex items-center justify-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                            <Check className="w-4 h-4" />
-                            <span>You're on the early access list!</span>
-                          </div>
-                          <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 mt-0.5">
-                            We'll ping you before public launch.
-                          </p>
-                        </div>
-                      ) : (
-                        <form onSubmit={handleWaitlistSubmit} className="space-y-2">
-                          <div className="flex items-center justify-between text-[11px] font-semibold text-neutral-600 dark:text-neutral-400">
-                            <span>Get early access & updates</span>
-                            <span className="text-[10px] font-mono text-amber-600 dark:text-amber-400">Demand Signal</span>
-                          </div>
-                          <div className="flex gap-1.5">
-                            <input
-                              type="email"
-                              required
-                              value={waitlistEmail}
-                              onChange={(e) => setWaitlistEmail(e.target.value)}
-                              placeholder="Enter your email"
-                              className="flex-1 px-3 py-2 text-xs rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-amber-500"
-                            />
-                            <button
-                              type="submit"
-                              disabled={isWaitlistSubmitting}
-                              className="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-colors cursor-pointer shadow-xs shrink-0"
-                            >
-                              {isWaitlistSubmitting ? 'Joining...' : 'Notify Me'}
-                            </button>
-                          </div>
-                        </form>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={() => navigate(tier.ctaAction)}
-                      className={`w-full py-3 px-4 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer ${
-                        tier.id === 'free'
-                          ? 'bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 shadow-md hover:shadow-lg'
-                          : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-200'
-                      }`}
-                    >
-                      <span>{tier.ctaText}</span>
-                      <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  )}
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">STARTER</span>
                 </div>
-              );
-            })}
+
+                <h3 className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight mb-2">
+                  Starter Edition
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 min-h-[34px] leading-relaxed mb-6">
+                  Ideal for solo writers, researchers, students, and offline privacy purists.
+                </p>
+
+                <div className="flex items-baseline gap-1 mb-6 pb-6 border-b border-neutral-100 dark:border-neutral-800">
+                  <span className="text-4xl sm:text-5xl font-black text-neutral-950 dark:text-white tracking-tight">
+                    {region.currencySymbol}0
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                    forever free
+                  </span>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">What's Included:</div>
+                  {[
+                    'Unlimited local Markdown documents',
+                    'Dexie IndexedDB instant offline cache',
+                    'Live dual-pane split view + Zen mode',
+                    'GFM formatting, tables & task lists',
+                    'KaTeX LaTeX mathematical formula studio',
+                    'Clean PDF & Raw Markdown export',
+                    'Client-side WebP image compression',
+                    'All core slash block commands (/)',
+                    '100% private — data never leaves browser'
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/editor')}
+                className="w-full py-3 px-4 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 shadow-md hover:shadow-lg"
+              >
+                <span>Start Writing Free</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            {/* Pro Plan (Earlybird Waitlist with Coupon System) */}
+            <div className="relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 bg-neutral-50/70 dark:bg-neutral-900/50 border-2 border-amber-300 dark:border-amber-700/80 shadow-md">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-amber-500 text-neutral-950 text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider shadow-sm flex items-center gap-1.5 whitespace-nowrap">
+                <Sparkles className="w-3 h-3 text-neutral-950" />
+                <span>Earlybird VIP • Limited 100 Seats</span>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center text-amber-700 dark:text-amber-300">
+                    <Cloud className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">PRO WRITER</span>
+                </div>
+
+                <h3 className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight mb-2">
+                  Pro Cloud &amp; Sync
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 min-h-[34px] leading-relaxed mb-6">
+                  Multi-device cloud backup, publication-grade PDF covers, and full blueprint templates.
+                </p>
+
+                {/* Regional Price Display */}
+                <div className="flex items-baseline gap-1.5 mb-3 pb-3 border-b border-neutral-200/60 dark:border-neutral-800">
+                  <span className="text-4xl sm:text-5xl font-black text-neutral-950 dark:text-white tracking-tight">
+                    {region.currencySymbol}{proDisplayPrice}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                    {isAnnual ? '/ month, billed annually' : '/ month'}
+                  </span>
+                </div>
+
+                {/* Limited 100 Seats Telemetry */}
+                <div className="mb-6 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 space-y-1.5">
+                  <div className="flex items-center justify-between text-[11px] font-semibold text-amber-900 dark:text-amber-200">
+                    <span className="flex items-center gap-1">
+                      <Tag className="w-3 h-3 text-amber-600" />
+                      <span>Earlybird VIP Availability</span>
+                    </span>
+                    <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
+                      {remainingSeats !== null ? `${remainingSeats} / 100 Seats Left` : 'Checking spots...'}
+                    </span>
+                  </div>
+                  {/* Progress Bar */}
+                  <div className="w-full h-2 bg-amber-200/60 dark:bg-amber-900/40 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-amber-500 dark:bg-amber-400 rounded-full transition-all duration-500"
+                      style={{ width: `${seatsClaimedPercent}%` }}
+                    />
+                  </div>
+                  <div className="text-[10px] text-amber-700/80 dark:text-amber-400/80 flex items-center justify-between pt-0.5">
+                    <span>Reward: 1 mo free (Monthly) or 2 mo free + 20% off (Annual)</span>
+                    <span className="font-mono">
+                      {remainingSeats !== null ? `${seatsClaimedPercent.toFixed(0)}% claimed` : '...'}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Everything in Starter, plus:</div>
+                  {[
+                    'Multi-device Supabase Cloud Sync (MVP)',
+                    'Automatic background cloud backup',
+                    'Publication-grade PDF Studio (Custom cover & TOC)',
+                    'Full & unlimited blueprint template library',
+                    'Local revision checkpoints & version rollback',
+                    '1-Click password-protected web publishing',
+                    'Advanced slash commands & power workflows',
+                    'Priority support & early access updates'
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+                      <Check className="w-4 h-4 text-amber-500 shrink-0 mt-0.5 stroke-[2.5]" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Waitlist Status Card vs Join CTA */}
+              <div className="pt-2">
+                {waitlistStatus.hasJoined ? (
+                  <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800/80 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                        <Check className="w-4 h-4" />
+                        <span>VIP Earlybird Spot Confirmed!</span>
+                      </div>
+                      <span className="text-[10px] font-mono bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 px-2 py-0.5 rounded-full font-bold">
+                        Active Pass
+                      </span>
+                    </div>
+
+                    {waitlistStatus.couponCode && (
+                      <div className="flex items-center justify-between bg-white dark:bg-neutral-900 p-2.5 rounded-xl border border-emerald-200/60 dark:border-emerald-800/60">
+                        <div>
+                          <span className="text-[10px] text-neutral-400 block font-sans">YOUR COUPON CODE</span>
+                          <span className="font-mono text-xs font-black text-neutral-900 dark:text-white">
+                            {waitlistStatus.couponCode}
+                          </span>
+                        </div>
+                        <button
+                          onClick={() => handleCopyCoupon(waitlistStatus.couponCode!)}
+                          className="p-1.5 rounded-lg bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-300 text-xs transition-colors cursor-pointer"
+                          title="Copy Coupon"
+                        >
+                          {copiedCoupon ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
+                        </button>
+                      </div>
+                    )}
+
+                    <p className="text-[10px] text-emerald-600/80 dark:text-emerald-400/80 text-center">
+                      Redeem below to activate your free Pro trial months.
+                    </p>
+                  </div>
+                ) : user ? (
+                  <button
+                    onClick={handleClaimWaitlistSpot}
+                    disabled={isSubmittingWaitlist || (remainingSeats !== null && remainingSeats <= 0)}
+                    className="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg disabled:opacity-50"
+                  >
+                    <Gift className="w-4 h-4" />
+                    <span>{isSubmittingWaitlist ? 'Securing Spot...' : 'Claim 1 of 100 VIP Spots'}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => navigate('/auth?redirect=/pricing&intent=waitlist')}
+                    className="w-full py-3.5 px-4 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 font-bold text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md hover:shadow-lg"
+                  >
+                    <span>Sign In to Claim Earlybird Spot</span>
+                    <ArrowRight className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Team & Studio Plan */}
+            <div className="relative rounded-3xl p-8 flex flex-col justify-between transition-all duration-200 bg-white dark:bg-neutral-900/60 border border-neutral-200 dark:border-neutral-800 shadow-sm hover:shadow-md">
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="w-10 h-10 rounded-xl bg-neutral-100 dark:bg-neutral-800 flex items-center justify-center text-neutral-800 dark:text-neutral-200">
+                    <Users className="w-5 h-5" />
+                  </div>
+                  <span className="text-xs font-bold uppercase tracking-wider text-neutral-400">TEAM &amp; STUDIO</span>
+                </div>
+
+                <h3 className="text-2xl font-black text-neutral-950 dark:text-white tracking-tight mb-2">
+                  Team &amp; Studio
+                </h3>
+                <p className="text-xs text-neutral-500 dark:text-neutral-400 min-h-[34px] leading-relaxed mb-6">
+                  For engineering teams, documentation squads, and collaborative studios.
+                </p>
+
+                <div className="flex items-baseline gap-1 mb-6 pb-6 border-b border-neutral-100 dark:border-neutral-800">
+                  <span className="text-4xl sm:text-5xl font-black text-neutral-950 dark:text-white tracking-tight">
+                    {region.currencySymbol}{teamDisplayPrice}
+                  </span>
+                  <span className="text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+                    {isAnnual ? '/ seat / month' : '/ seat / month'}
+                  </span>
+                </div>
+
+                <div className="space-y-3 mb-8">
+                  <div className="text-xs font-bold text-neutral-400 uppercase tracking-wider mb-2">Everything in Pro, plus:</div>
+                  {[
+                    'Real-Time Multiplayer Collaboration',
+                    'Shared team workspace & tag taxonomies',
+                    'Role-based permissions (Admin, Editor, Viewer)',
+                    'Centralized team license & billing',
+                    'Shared team templates & style guides',
+                    'SSO & SAML authentication integration',
+                    'Dedicated 99.9% uptime SLA & account rep'
+                  ].map((feat, idx) => (
+                    <div key={idx} className="flex items-start gap-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+                      <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5 stroke-[2.5]" />
+                      <span>{feat}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={() => navigate('/auth')}
+                className="w-full py-3 px-4 rounded-xl text-xs font-bold tracking-tight transition-all flex items-center justify-center gap-2 cursor-pointer bg-neutral-100 hover:bg-neutral-200 text-neutral-800 dark:bg-neutral-800 dark:hover:bg-neutral-700 dark:text-neutral-200"
+              >
+                <span>Contact Sales</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Live Coupon Redemption Box */}
+        <section className="max-w-2xl mx-auto px-4 sm:px-6 pb-16">
+          <div className="p-6 rounded-3xl bg-neutral-50/80 dark:bg-neutral-900/60 border border-neutral-200/90 dark:border-neutral-800 shadow-sm text-center">
+            <div className="w-10 h-10 rounded-2xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 flex items-center justify-center mx-auto mb-3 shadow-xs">
+              <Tag className="w-5 h-5" />
+            </div>
+            <h3 className="text-lg font-bold text-neutral-950 dark:text-white tracking-tight">
+              Have an Earlybird Coupon Code?
+            </h3>
+            <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-md mx-auto">
+              Enter your one-time code to immediately activate your Pro subscription trial (1 month free on Monthly, 2 months free on Annual).
+            </p>
+
+            <form onSubmit={handleRedeemCouponSubmit} className="mt-5 flex flex-col sm:flex-row gap-2 max-w-md mx-auto">
+              <input
+                type="text"
+                value={redeemInput}
+                onChange={(e) => setRedeemInput(e.target.value.toUpperCase())}
+                placeholder="e.g. EARLYBIRD-XXXXX"
+                className="flex-1 px-4 py-2.5 text-xs font-mono rounded-xl bg-white dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 text-neutral-900 dark:text-white placeholder-neutral-400 focus:outline-none focus:border-amber-500 uppercase"
+              />
+              <button
+                type="submit"
+                disabled={isRedeeming || !redeemInput.trim()}
+                className="px-5 py-2.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 text-xs font-bold transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+              >
+                {isRedeeming ? 'Validating...' : 'Redeem Pro'}
+              </button>
+            </form>
+
+            {redeemFeedback && (
+              <div
+                className={`mt-4 p-3 rounded-xl text-xs flex items-center justify-center gap-2 max-w-md mx-auto ${
+                  redeemFeedback.success
+                    ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
+                }`}
+              >
+                {redeemFeedback.success ? <Check className="w-4 h-4 shrink-0" /> : <AlertCircle className="w-4 h-4 shrink-0" />}
+                <span>{redeemFeedback.message}</span>
+              </div>
+            )}
           </div>
         </section>
 
@@ -467,13 +657,13 @@ export const PricingPage: React.FC = () => {
 
         {/* CTA Banner */}
         <CtaBanner onOpenTemplates={() => navigate('/editor')} />
-
       </main>
 
       <WaitlistSuccessModal
         isOpen={isSuccessModalOpen}
         onClose={() => setIsSuccessModalOpen(false)}
-        email={lastSubmittedEmail}
+        email={user?.email || ''}
+        couponCode={lastAssignedCode}
       />
 
       <Footer />

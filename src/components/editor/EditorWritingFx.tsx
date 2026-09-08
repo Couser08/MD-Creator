@@ -34,6 +34,27 @@ let cachedMetrics = {
   fontSize: 14
 };
 
+export function shouldDisableHotPathFx(): boolean {
+  if (typeof window === 'undefined') return true;
+  // 1. Reduced motion preference
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    return true;
+  }
+  // 2. Mobile screen (< 768px)
+  if (window.innerWidth < 768) {
+    return true;
+  }
+  // 3. Low CPU hardware concurrency <= 4
+  if (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4) {
+    return true;
+  }
+  // 4. Low device memory <= 4GB
+  if ((navigator as any).deviceMemory && (navigator as any).deviceMemory <= 4) {
+    return true;
+  }
+  return false;
+}
+
 function getOrCreateMirror(): { mirror: HTMLDivElement; span: HTMLSpanElement } {
   if (!mirrorDiv) {
     mirrorDiv = document.createElement('div');
@@ -245,7 +266,7 @@ export const EditorWritingFx: React.FC<EditorWritingFxProps> = ({ textareaRef })
 
   // Emit particles from fixed pool (Zero allocation)
   const emitParticlesAt = (x: number, y: number) => {
-    if (lowPowerMode || typingEffect === 'none') return;
+    if (lowPowerMode || typingEffect === 'none' || shouldDisableHotPathFx()) return;
 
     const colors = cursorStyle === 'terminal' 
       ? ['#22c55e', '#4ade80', '#86efac'] 

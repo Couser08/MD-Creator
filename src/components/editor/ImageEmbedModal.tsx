@@ -11,6 +11,7 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { optimizeImage, formatBytes, CompressionResult } from '../../utils/imageCompressor';
+import { storeDataUrlImage } from '../../services/imageStorageService';
 
 interface ImageEmbedModalProps {
   isOpen: boolean;
@@ -133,14 +134,15 @@ export const ImageEmbedModal: React.FC<ImageEmbedModalProps> = ({
   };
 
   // Build markdown snippet and insert
-  const handleInsert = () => {
+  const handleInsert = async () => {
     const alt = altText.trim() || 'Image';
     const cap = caption.trim();
     let src = '';
 
     if (activeTab === 'upload') {
       if (!compressionResult) return;
-      src = compressionResult.dataUrl;
+      const stored = await storeDataUrlImage(compressionResult.dataUrl, altText.trim() || compressionResult.fileName || 'image.png');
+      src = stored.shortUrl; // e.g. "image://img_8a2fd"
     } else {
       if (!imageUrl.trim()) return;
       src = imageUrl.trim();

@@ -14,22 +14,32 @@ interface WaitlistSuccessModalProps {
   isOpen: boolean;
   onClose: () => void;
   email: string;
+  couponCode?: string | null;
 }
 
 export const WaitlistSuccessModal: React.FC<WaitlistSuccessModalProps> = ({
   isOpen,
   onClose,
-  email
+  email,
+  couponCode
 }) => {
-  const [copied, setCopied] = useState(false);
+  const [copiedShare, setCopiedShare] = useState(false);
+  const [copiedCoupon, setCopiedCoupon] = useState(false);
 
   if (!isOpen) return null;
 
   const handleCopyShareLink = () => {
     const shareUrl = window.location.origin + '/pricing';
     navigator.clipboard.writeText(shareUrl);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2500);
+    setCopiedShare(true);
+    setTimeout(() => setCopiedShare(false), 2500);
+  };
+
+  const handleCopyCoupon = () => {
+    if (!couponCode) return;
+    navigator.clipboard.writeText(couponCode);
+    setCopiedCoupon(true);
+    setTimeout(() => setCopiedCoupon(false), 2500);
   };
 
   return (
@@ -89,32 +99,63 @@ export const WaitlistSuccessModal: React.FC<WaitlistSuccessModalProps> = ({
             </p>
           </div>
 
+          {/* Exclusive Coupon Code Card */}
+          {couponCode && (
+            <div className="mt-5 p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/80 flex items-center justify-between gap-3">
+              <div>
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 uppercase tracking-wider block">
+                  Your Earlybird Coupon Code
+                </span>
+                <span className="font-mono text-sm font-black text-amber-900 dark:text-amber-200 tracking-wider">
+                  {couponCode}
+                </span>
+              </div>
+              <button
+                onClick={handleCopyCoupon}
+                className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-neutral-950 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-xs shrink-0"
+                title="Copy Coupon Code"
+              >
+                {copiedCoupon ? (
+                  <>
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3.5 h-3.5" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+          )}
+
           {/* Perks Card */}
-          <div className="mt-6 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 space-y-2.5 text-xs text-neutral-700 dark:text-neutral-300">
+          <div className="mt-4 p-4 rounded-2xl bg-neutral-50 dark:bg-neutral-800/60 border border-neutral-200/60 dark:border-neutral-700/60 space-y-2.5 text-xs text-neutral-700 dark:text-neutral-300">
             <div className="font-bold text-neutral-900 dark:text-white text-[11px] uppercase tracking-wider mb-1 flex items-center gap-1.5">
               <Gift className="w-3.5 h-3.5 text-blue-500" />
-              <span>Your Waitlist Member Perks</span>
+              <span>Your Waitlist Member Rewards</span>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
               </div>
-              <span>Exclusive 50% launch lifetime discount on Pro</span>
+              <span><strong>Monthly:</strong> 1 month Pro free at redemption</span>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
               </div>
-              <span>Direct line to shape the product roadmap</span>
+              <span><strong>Annual:</strong> 20% annual discount + <strong>2 months Pro free</strong></span>
             </div>
 
             <div className="flex items-center gap-2">
               <div className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-950/80 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
                 <Check className="w-2.5 h-2.5 stroke-[3]" />
               </div>
-              <span>Starter edition remains 100% free forever</span>
+              <span>Priority direct access to shape the product roadmap</span>
             </div>
           </div>
 
@@ -124,7 +165,7 @@ export const WaitlistSuccessModal: React.FC<WaitlistSuccessModalProps> = ({
               onClick={handleCopyShareLink}
               className="w-full py-3 px-4 rounded-xl font-semibold text-xs bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm hover:shadow"
             >
-              {copied ? (
+              {copiedShare ? (
                 <>
                   <Check className="w-4 h-4 text-emerald-500" />
                   <span>Invitation Link Copied!</span>

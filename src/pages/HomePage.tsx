@@ -61,7 +61,7 @@ export const HomePage: React.FC = () => {
 
         {/* Bento Grid Features */}
         <BentoFeatures 
-          onExploreFeatures={() => setIsDemoOpen(true)} 
+          onExploreFeatures={() => navigate('/features')} 
           onOpenUpdates={() => navigate('/updates')}
           onOpenTemplates={() => setIsTemplatesOpen(true)}
         />

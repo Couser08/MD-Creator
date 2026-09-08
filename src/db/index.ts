@@ -32,11 +32,21 @@ export interface DocumentRevision {
   reason?: string;
 }
 
+export interface StoredImage {
+  id: string; // e.g. "img_8a2fd" (< 10 chars)
+  name: string;
+  dataUrl: string; // Compressed WebP data URL
+  mimeType: string;
+  sizeBytes: number;
+  createdAt: number;
+}
+
 // Database declaration extending Dexie
 export class MdWriterDB extends Dexie {
   documents!: EntityTable<DocumentMetadata, 'id'>;
   document_cache!: EntityTable<CachedContent, 'id'>;
   revisions!: EntityTable<DocumentRevision, 'id'>;
+  images!: EntityTable<StoredImage, 'id'>;
 
   constructor() {
     super('MdWriterDB');
@@ -48,6 +58,12 @@ export class MdWriterDB extends Dexie {
       documents: 'id, title, updatedAt, createdAt, isPinned, isFavorite, openCount, *tags',
       document_cache: 'id, cachedAt',
       revisions: '++id, documentId, timestamp'
+    });
+    this.version(3).stores({
+      documents: 'id, title, updatedAt, createdAt, isPinned, isFavorite, openCount, *tags',
+      document_cache: 'id, cachedAt',
+      revisions: '++id, documentId, timestamp',
+      images: 'id, name, createdAt'
     });
   }
 }
