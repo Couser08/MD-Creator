@@ -75,6 +75,8 @@ export const EditorPage: React.FC = () => {
     onOpenTemplates: () => modals.setIsTemplatesOpen(true),
     onOpenMathStudio: () => modals.setIsMathStudioOpen(true),
     onOpenImageModal: () => modals.setIsImageModalOpen(true),
+    onExportMd: doc.handleExportMd,
+    onOpenPdfStudio: () => modals.setIsPdfStudioOpen(true),
   });
 
   // Insert formula snippet from KaTeX Studio at cursor

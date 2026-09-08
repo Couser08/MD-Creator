@@ -46,8 +46,8 @@ export const CtaFeatureStrip: React.FC = () => {
               key={feat.title}
               className="flex items-center gap-3 px-2 lg:px-6 transition-colors group select-none"
             >
-              <div className="w-9 h-9 rounded-full border border-neutral-200/90 dark:border-neutral-800 flex items-center justify-center shrink-0 bg-white dark:bg-neutral-900 group-hover:border-neutral-400 dark:group-hover:border-neutral-600 transition-colors">
-                <Icon className="w-4 h-4 text-neutral-800 dark:text-neutral-200 stroke-[1.75]" />
+              <div className="w-10 h-10 rounded-2xl bg-blue-50/80 dark:bg-blue-950/50 border border-blue-100/60 dark:border-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Icon className="w-5 h-5 stroke-[1.75]" />
               </div>
               <div className="min-w-0">
                 <h4 className="font-bold text-xs sm:text-sm text-neutral-900 dark:text-white truncate">

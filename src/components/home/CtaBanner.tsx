@@ -49,10 +49,10 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ onOpenTemplates }) => {
             </p>
 
             {/* Action Buttons */}
-            <div className="flex flex-wrap items-center gap-3.5 mb-8">
+            <div className="flex flex-wrap items-center gap-3.5 mb-6">
               <button
                 onClick={() => navigate('/editor')}
-                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-neutral-950 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-sm cursor-pointer group"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs sm:text-sm transition-all flex items-center gap-2 shadow-sm cursor-pointer group"
               >
                 <span>Open Editor</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
@@ -60,14 +60,17 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ onOpenTemplates }) => {
 
               <button
                 onClick={onOpenTemplates}
-                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl border border-neutral-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs sm:text-sm transition-all cursor-pointer shadow-2xs"
+                className="px-6 sm:px-7 py-3 sm:py-3.5 rounded-xl border border-neutral-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-neutral-50 dark:hover:bg-neutral-800 text-neutral-800 dark:text-neutral-200 font-bold text-xs sm:text-sm transition-all flex items-center gap-2 cursor-pointer shadow-2xs"
               >
-                View Templates
+                <div className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                  <div className="w-0 h-0 border-y-[3px] border-y-transparent border-l-[6px] border-l-blue-600 dark:border-l-blue-400 ml-0.5" />
+                </div>
+                <span>View Templates</span>
               </button>
             </div>
 
             {/* Social Proof */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 mb-6">
               <div className="flex -space-x-2 overflow-hidden">
                 {avatars.map((img, i) => (
                   <img
@@ -81,6 +84,22 @@ export const CtaBanner: React.FC<CtaBannerProps> = ({ onOpenTemplates }) => {
               <p className="text-xs text-neutral-600 dark:text-neutral-400">
                 Loved by <span className="font-bold text-neutral-900 dark:text-white">10,000+</span> creators, students and professionals.
               </p>
+            </div>
+
+            {/* Trust Indicators Checkmarks */}
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-neutral-500 dark:text-neutral-400 font-medium">
+              <div className="flex items-center gap-1.5">
+                <span className="text-blue-600 font-bold">✓</span>
+                <span>No installation</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-blue-600 font-bold">✓</span>
+                <span>Works offline</span>
+              </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-blue-600 font-bold">✓</span>
+                <span>Your data stays private</span>
+              </div>
             </div>
 
           </div>

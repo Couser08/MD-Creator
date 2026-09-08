@@ -31,7 +31,7 @@ export interface UpdateMilestone {
 
 export const MILESTONES: UpdateMilestone[] = [
   {
-    version: 'v3.1',
+    version: 'v0.8.0',
     isLatest: true,
     date: 'September 2026',
     title: 'Embed Image Studio, Decluttered Minimalist Navbar, Feedback Hub & Supporter Coffee',
@@ -53,7 +53,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v3.0',
+    version: 'v0.7.5',
     date: 'March 2026',
     title: 'Architecture Modularization, PWA Desktop & Mobile App, KaTeX Studio & Apple Emojis',
     category: 'engine',
@@ -75,7 +75,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v2.5',
+    version: 'v0.7.0',
     date: 'September 2026',
     title: 'Game-Developer 60–144FPS Canvas Engine & Idempotent Cloud Sync',
     category: 'engine',
@@ -94,7 +94,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v2.4',
+    version: 'v0.6.5',
     date: 'August 2026',
     title: 'PDF Publishing Studio v2 & Running Footer Geometry',
     category: 'publishing',
@@ -111,7 +111,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v2.3',
+    version: 'v0.6.0',
     date: 'July 2026',
     title: 'Interactive Outline Navigator & Centralized Safety Confirmation',
     category: 'ux',
@@ -128,7 +128,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v2.2',
+    version: 'v0.5.0',
     date: 'June 2026',
     title: 'Bi-Directional Supabase Cloud Sync & Multi-Device Hub',
     category: 'sync',
@@ -144,7 +144,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v2.0',
+    version: 'v0.4.0',
     date: 'April 2026',
     title: 'Design System Overhaul, Slash Commands & Typewriter Mode',
     category: 'ux',
@@ -161,7 +161,7 @@ export const MILESTONES: UpdateMilestone[] = [
     ]
   },
   {
-    version: 'v1.0',
+    version: 'v0.1.0',
     date: 'January 2026',
     title: 'Foundational Release: The Offline-First Markdown Architecture',
     category: 'engine',

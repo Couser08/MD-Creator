@@ -518,8 +518,8 @@ export const MockupWorkspace: React.FC<MockupWorkspaceProps> = ({
 
               {/* RIGHT PANE: Markdown Preview */}
               {(viewMode === 'split' || viewMode === 'preview') && (
-                <div className={`h-full overflow-y-auto p-4 select-text ${mockupTheme === 'dark' ? 'bg-[#16161f] text-neutral-100' : 'bg-white text-neutral-800'} ${viewMode === 'preview' ? 'col-span-1 lg:col-span-2' : ''}`}>
-                  <div className="max-w-none prose prose-sm dark:prose-invert prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-500">
+                <div className={`h-full overflow-y-auto p-4 select-text ${mockupTheme === 'dark' ? 'bg-[#16161f] text-neutral-100' : 'bg-white text-neutral-900'} ${viewMode === 'preview' ? 'col-span-1 lg:col-span-2' : ''}`}>
+                  <div className={`max-w-none prose prose-sm ${mockupTheme === 'dark' ? 'prose-invert text-neutral-200' : 'text-neutral-900'} prose-headings:font-bold prose-headings:tracking-tight prose-a:text-blue-600`}>
                     <React.Suspense fallback={
                       <div className="space-y-3 py-2 animate-pulse">
                         <div className="h-5 bg-neutral-200/40 dark:bg-neutral-800/60 rounded w-3/4" />

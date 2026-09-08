@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { MermaidBlock } from './MermaidBlock';
 import { replaceEmojisInReactNode } from '../../utils/appleEmoji';
+import { FrontmatterCard } from './FrontmatterCard';
 
 interface MarkdownPreviewProps {
   content: string;
@@ -191,6 +192,11 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
   const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const [activeLightboxImage, setActiveLightboxImage] = useState<{ src: string; alt?: string; title?: string } | null>(null);
 
+  // Parse opening YAML front matter if present
+  const frontmatterMatch = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?/);
+  const rawFrontmatter = frontmatterMatch ? frontmatterMatch[1] : null;
+  const markdownBody = frontmatterMatch ? content.slice(frontmatterMatch[0].length) : content;
+
   const handleCopyCode = (codeText: string, id: string) => {
     navigator.clipboard.writeText(codeText);
     setCopiedCodeId(id);
@@ -199,6 +205,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
 
   return (
     <div data-markdown-preview="true" className="w-full text-neutral-800 dark:text-neutral-200 leading-relaxed text-sm select-text">
+      {rawFrontmatter && <FrontmatterCard rawYaml={rawFrontmatter} />}
       <ReactMarkdown
         remarkPlugins={[remarkGfm, remarkMath]}
         rehypePlugins={[rehypeRaw, rehypeKatex, rehypeHighlight]}
@@ -485,7 +492,7 @@ export const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ content, onTog
           )
         }}
       >
-        {content}
+        {markdownBody}
       </ReactMarkdown>
 
       {/* Lightbox Zoom Modal */}

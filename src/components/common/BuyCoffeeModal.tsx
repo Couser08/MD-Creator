@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { 
-  Coffee, 
   X, 
   Heart, 
   ExternalLink, 
   ShieldCheck, 
-  ArrowRight,
-  Gift
+  Sparkles,
+  Zap
 } from 'lucide-react';
-import { renderWithAppleEmojis } from '../../utils/appleEmoji';
+import { FluentEmoji } from '../../utils/appleEmoji';
 
 export { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
 
@@ -21,34 +20,34 @@ interface BuyCoffeeModalProps {
 interface CoffeeTier {
   id: string;
   name: string;
-  cups: string;
   price: number;
   popular?: boolean;
   tagline: string;
+  impact: string;
 }
 
 const TIERS: CoffeeTier[] = [
   {
     id: 'espresso',
     name: 'Espresso',
-    cups: '☕',
     price: 3,
-    tagline: 'Quick boost for rapid bug fixes'
+    tagline: 'Quick caffeine boost',
+    impact: 'Covers domain DNS & cloud health checks'
   },
   {
     id: 'latte',
     name: 'Creamy Latte',
-    cups: '☕☕',
     price: 5,
     popular: true,
-    tagline: 'Fuel for building new features'
+    tagline: 'Most Popular Choice',
+    impact: 'Covers 1 month of CDN & offline asset hosting'
   },
   {
     id: 'roaster',
     name: 'Roaster Pack',
-    cups: '☕☕☕',
     price: 10,
-    tagline: 'Rocket fuel for MD Writer evolution'
+    tagline: 'Rocket Fuel',
+    impact: 'Funds new PDF styling & KaTeX studio engineering'
   }
 ];
 
@@ -66,14 +65,12 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
   const [supporterNote, setSupporterNote] = useState('');
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Listen to global open event
   useEffect(() => {
     const handleGlobalOpen = () => setInternalOpen(true);
     window.addEventListener('open-buy-coffee', handleGlobalOpen);
     return () => window.removeEventListener('open-buy-coffee', handleGlobalOpen);
   }, []);
 
-  // Handle escape key
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && isModalOpen) {
@@ -87,7 +84,6 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
   const handleClose = () => {
     if (propOnClose) propOnClose();
     setInternalOpen(false);
-    // Reset celebration after exit
     setTimeout(() => {
       setIsSuccess(false);
       setSupporterName('');
@@ -104,21 +100,19 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
     return tier ? tier.price : 5;
   };
 
-  const handleSimulatedSupport = () => {
-    setIsSuccess(true);
-  };
+  const currentTier = TIERS.find(t => t.id === selectedTier) || TIERS[1];
 
   return (
     <AnimatePresence>
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-6 select-none overflow-y-auto">
           {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={handleClose}
-            className="fixed inset-0 bg-neutral-950/65 backdrop-blur-xs"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm"
           />
 
           {/* Modal Container */}
@@ -126,48 +120,56 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
             initial={{ opacity: 0, scale: 0.95, y: 15 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 15 }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
-            className="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-200 dark:border-neutral-800 overflow-hidden z-10 flex flex-col max-h-[92vh]"
+            transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-lg bg-white dark:bg-neutral-900 rounded-3xl shadow-2xl border border-neutral-200/90 dark:border-neutral-800 overflow-hidden z-10 flex flex-col max-h-[92vh]"
           >
             {/* Ambient Warm Gradient Accent Top */}
             <div className="h-2 w-full bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500" />
 
+            {/* Ambient Background Aura */}
+            <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 dark:bg-amber-500/15 rounded-full blur-3xl pointer-events-none" />
+
             {/* Header */}
-            <div className="flex items-center justify-between px-6 pt-5 pb-3 shrink-0">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-amber-100 dark:bg-amber-950/70 text-amber-700 dark:text-amber-400 flex items-center justify-center shadow-xs">
-                  <Coffee className="w-5 h-5" />
+            <div className="flex items-center justify-between px-6 pt-5 pb-3 shrink-0 relative z-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-amber-500/15 text-amber-600 dark:text-amber-400 flex items-center justify-center border border-amber-500/25 shadow-xs">
+                  <FluentEmoji emoji="☕" size="1.6em" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold text-neutral-900 dark:text-white flex items-center gap-1.5">
-                    <span>Buy Me a Coffee</span>
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 font-medium">
-                      Support Creator
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-base font-bold text-neutral-900 dark:text-white">
+                      Fuel MD Writer
+                    </h2>
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300/40 dark:border-amber-900/40">
+                      Independent Software
                     </span>
-                  </h2>
+                  </div>
                   <p className="text-xs text-neutral-500 dark:text-neutral-400">
-                    Keep MD Writer independent, fast, and 100% ad-free
+                    100% free, private, and open-source. Powered by supporters.
                   </p>
                 </div>
               </div>
 
               <button
                 onClick={handleClose}
-                className="p-1.5 rounded-xl text-neutral-400 hover:text-neutral-600 dark:hover:text-neutral-200 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="p-1.5 rounded-xl text-neutral-400 hover:text-neutral-700 dark:hover:text-white hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                title="Close"
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
             {/* Body */}
-            <div className="p-6 overflow-y-auto space-y-5 text-xs">
+            <div className="px-6 py-3 overflow-y-auto space-y-4 relative z-10">
               {!isSuccess ? (
                 <>
-                  {/* Coffee Tiers */}
+                  {/* Tier Selector */}
                   <div>
-                    <label className="block font-bold text-neutral-800 dark:text-neutral-200 mb-2">
-                      Choose Your Coffee Boost
-                    </label>
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-400 mb-2 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      <span>Choose Support Tier</span>
+                    </div>
+
                     <div className="grid grid-cols-3 gap-2.5">
                       {TIERS.map((tier) => {
                         const isSelected = !isCustom && selectedTier === tier.id;
@@ -178,196 +180,160 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
                               setSelectedTier(tier.id);
                               setIsCustom(false);
                             }}
-                            className={`relative p-3.5 rounded-2xl border-2 cursor-pointer transition-all text-center flex flex-col items-center justify-between ${
+                            className={`relative p-3.5 rounded-2xl border text-center transition-all cursor-pointer ${
                               isSelected
-                                ? 'border-amber-500 bg-amber-50/60 dark:bg-amber-950/30 shadow-xs'
-                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-neutral-50/40 dark:bg-neutral-800/30'
+                                ? 'border-amber-500 bg-amber-50/50 dark:bg-amber-950/30 ring-2 ring-amber-500/20 shadow-xs'
+                                : 'border-neutral-200 dark:border-neutral-800 hover:border-neutral-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
                             }`}
                           >
                             {tier.popular && (
-                              <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.2 rounded-full bg-amber-500 text-white font-black text-[9px] uppercase tracking-wider shadow-2xs">
-                                Most Popular
-                              </span>
+                              <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full shadow-xs">
+                                Popular
+                              </div>
                             )}
-                            <div className="text-lg mb-1">{tier.cups}</div>
-                            <div className="font-bold text-neutral-900 dark:text-white text-xs">
-                              {tier.name}
-                            </div>
-                            <div className="text-sm font-black text-amber-600 dark:text-amber-400 mt-1">
+
+                            <div className="text-xl font-black text-neutral-900 dark:text-white mt-1">
                               ${tier.price}
                             </div>
-                            <p className="text-[10px] text-neutral-400 dark:text-neutral-500 mt-1 leading-tight line-clamp-2">
+                            <div className="text-xs font-bold text-neutral-800 dark:text-neutral-200 mt-0.5">
+                              {tier.name}
+                            </div>
+                            <div className="text-[10px] text-neutral-400 mt-1 leading-tight line-clamp-1">
                               {tier.tagline}
-                            </p>
+                            </div>
                           </div>
                         );
                       })}
                     </div>
                   </div>
 
-                  {/* Custom Amount Button / Input */}
-                  <div className="pt-1">
-                    <div className="flex items-center gap-2">
-                      <button
-                        type="button"
-                        onClick={() => setIsCustom(!isCustom)}
-                        className={`px-3 py-1.5 rounded-xl border text-xs font-semibold cursor-pointer transition-all ${
-                          isCustom
-                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300'
-                            : 'border-neutral-200 dark:border-neutral-800 text-neutral-600 dark:text-neutral-400 hover:bg-neutral-50 dark:hover:bg-neutral-800'
-                        }`}
-                      >
-                        Custom Amount
-                      </button>
-
-                      {isCustom && (
-                        <div className="flex-1 relative">
-                          <span className="absolute left-3 top-1/2 -translate-y-1/2 font-bold text-neutral-400">
-                            $
-                          </span>
-                          <input
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="Enter amount"
-                            value={customAmount}
-                            onChange={(e) => setCustomAmount(e.target.value)}
-                            className="w-full pl-7 pr-3 py-1.5 rounded-xl border border-neutral-300 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 font-bold"
-                            autoFocus
-                          />
-                        </div>
-                      )}
-                    </div>
+                  {/* Impact Note Banner */}
+                  <div className="p-3 rounded-2xl bg-amber-50/60 dark:bg-amber-950/25 border border-amber-200/60 dark:border-amber-900/40 text-xs text-amber-900 dark:text-amber-200 flex items-center gap-2.5">
+                    <Zap className="w-4 h-4 text-amber-500 shrink-0" />
+                    <span className="text-[11px] leading-relaxed">
+                      <strong>Impact:</strong> {isCustom ? 'Every dollar fuels continuous independent development.' : currentTier.impact}
+                    </span>
                   </div>
 
-                  {/* Supporter Name & Note */}
-                  <div className="space-y-3 pt-2 border-t border-neutral-100 dark:border-neutral-800">
-                    <div>
-                      <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                        Your Name / Handle (Optional)
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Alex or @writer"
-                        value={supporterName}
-                        onChange={(e) => setSupporterName(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block font-semibold text-neutral-700 dark:text-neutral-300 mb-1">
-                        Message or Feedback (Optional)
-                      </label>
-                      <textarea
-                        rows={2}
-                        placeholder="Leave a friendly note or idea..."
-                        value={supporterNote}
-                        onChange={(e) => setSupporterNote(e.target.value)}
-                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 resize-none"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Direct External Donation Links */}
-                  <div className="p-3.5 rounded-2xl bg-neutral-50 dark:bg-neutral-800/40 border border-neutral-200/70 dark:border-neutral-800 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-2">
-                      <Gift className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                  {/* Custom Amount & Note */}
+                  <div className="space-y-2.5">
+                    <div className="grid grid-cols-2 gap-2">
                       <div>
-                        <p className="font-bold text-neutral-800 dark:text-neutral-200">
-                          External Payment Channels
-                        </p>
-                        <p className="text-[10px] text-neutral-400">
-                          BuyMeACoffee.com, Ko-fi, or GitHub Sponsors
-                        </p>
+                        <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
+                          Custom Amount ($)
+                        </label>
+                        <input
+                          type="number"
+                          placeholder="e.g. 15"
+                          value={customAmount}
+                          onChange={(e) => {
+                            setCustomAmount(e.target.value);
+                            setIsCustom(true);
+                          }}
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-neutral-600 dark:text-neutral-400 mb-1">
+                          Your Name (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="Friendly Writer"
+                          value={supporterName}
+                          onChange={(e) => setSupporterName(e.target.value)}
+                          className="w-full px-3 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                        />
                       </div>
                     </div>
 
-                    <a
-                      href="https://buymeacoffee.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 dark:bg-amber-950 dark:hover:bg-amber-900 text-amber-900 dark:text-amber-200 font-bold text-[11px] flex items-center gap-1 transition-colors"
-                    >
-                      <span>BMC Page</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    <div>
+                      <input
+                        type="text"
+                        placeholder="Leave a short encouraging message or feature wish..."
+                        value={supporterNote}
+                        onChange={(e) => setSupporterNote(e.target.value)}
+                        className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-xs text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Payment Portals */}
+                  <div className="space-y-2 pt-1">
+                    <div className="text-[11px] font-bold uppercase tracking-wider text-neutral-400">
+                      Support via Platform
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      <a
+                        href="https://buymeacoffee.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-amber-400 dark:hover:border-amber-500 bg-amber-400/10 text-neutral-900 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <FluentEmoji emoji="☕" size="1.1em" />
+                        <span>Buy Me a Coffee</span>
+                      </a>
+
+                      <a
+                        href="https://ko-fi.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-rose-400 dark:hover:border-rose-500 bg-rose-500/10 text-neutral-900 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <Heart className="w-3.5 h-3.5 text-rose-500 fill-current" />
+                        <span>Ko-fi</span>
+                      </a>
+
+                      <a
+                        href="https://github.com/sponsors"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-purple-400 dark:hover:border-purple-500 bg-purple-500/10 text-neutral-900 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                      >
+                        <ExternalLink className="w-3.5 h-3.5 text-purple-500" />
+                        <span>GitHub Sponsors</span>
+                      </a>
+                    </div>
                   </div>
                 </>
               ) : (
-                /* Celebratory Thank You Screen */
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.9 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="py-6 text-center space-y-4"
-                >
-                  <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-500 to-rose-500 text-white flex items-center justify-center mx-auto shadow-lg shadow-amber-500/30">
-                    <Heart className="w-8 h-8 fill-white animate-pulse" />
+                /* Celebratory Success State */
+                <div className="py-8 text-center space-y-4 animate-in fade-in zoom-in-95 duration-200">
+                  <div className="w-16 h-16 mx-auto rounded-3xl bg-gradient-to-tr from-amber-400 to-rose-400 text-white flex items-center justify-center shadow-lg shadow-amber-500/25">
+                    <Heart className="w-8 h-8 fill-current animate-pulse" />
                   </div>
-
-                  <div>
-                    <h3 className="text-xl font-extrabold text-neutral-900 dark:text-white">
-                      You are amazing! {renderWithAppleEmojis('☕✨')}
-                    </h3>
-                    <p className="text-xs text-neutral-500 dark:text-neutral-400 mt-1 max-w-sm mx-auto">
-                      Thank you for fueling the craft of writing. Your support of{' '}
-                      <span className="font-bold text-amber-600 dark:text-amber-400">
-                        ${getActiveAmount()}
-                      </span>{' '}
-                      directly powers performance optimizations and new features.
-                    </p>
-                  </div>
-
-                  {supporterNote && (
-                    <div className="p-3.5 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-900 max-w-sm mx-auto text-left">
-                      <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-400">
-                        Your Note ({supporterName || 'Anonymous Supporter'}):
-                      </p>
-                      <p className="text-neutral-700 dark:text-neutral-300 italic mt-0.5">
-                        "{supporterNote}"
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleClose}
-                      className="px-6 py-2.5 rounded-2xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:text-neutral-950 dark:hover:bg-neutral-100 font-bold text-xs shadow-md transition-all cursor-pointer"
-                    >
-                      Back to Writing
-                    </button>
-                  </div>
-                </motion.div>
+                  <h3 className="text-xl sm:text-2xl font-black text-neutral-950 dark:text-white tracking-tight">
+                    Thank You for Fueling MD Writer!
+                  </h3>
+                  <p className="text-xs sm:text-sm text-neutral-600 dark:text-neutral-400 max-w-sm mx-auto leading-relaxed">
+                    {supporterName ? `Thank you, ${supporterName}!` : 'Thank you so much!'} Your contribution of <strong className="text-neutral-900 dark:text-white">${getActiveAmount()}</strong> helps keep this app completely free, private, and continually improving.
+                  </p>
+                  <button
+                    onClick={handleClose}
+                    className="mt-4 px-6 py-2.5 rounded-xl bg-neutral-900 hover:bg-neutral-800 text-white dark:bg-white dark:hover:bg-neutral-100 dark:text-neutral-950 font-bold text-xs transition-colors cursor-pointer"
+                  >
+                    Back to Writing
+                  </button>
+                </div>
               )}
             </div>
 
-            {/* Footer Actions */}
+            {/* Footer / Instant Pledge Action */}
             {!isSuccess && (
-              <div className="px-6 py-4 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/50 dark:bg-neutral-950/50 flex items-center justify-between shrink-0">
+              <div className="p-4 px-6 border-t border-neutral-100 dark:border-neutral-800 bg-neutral-50/60 dark:bg-neutral-900/60 flex items-center justify-between gap-4 shrink-0">
                 <div className="flex items-center gap-1.5 text-[11px] text-neutral-400">
                   <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                  <span>Secure & 100% Direct Support</span>
+                  <span>Direct creator support</span>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={handleClose}
-                    className="px-3.5 py-2 rounded-xl text-xs font-semibold text-neutral-600 dark:text-neutral-300 hover:bg-neutral-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleSimulatedSupport}
-                    className="px-5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs shadow-md hover:shadow-lg transition-all flex items-center gap-1.5 cursor-pointer"
-                  >
-                    <span>Support with ${getActiveAmount()}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </div>
+                <button
+                  onClick={() => setIsSuccess(true)}
+                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs transition-all flex items-center gap-2 shadow-sm hover:shadow cursor-pointer"
+                >
+                  <Heart className="w-3.5 h-3.5 fill-current" />
+                  <span>Support ${getActiveAmount()}</span>
+                </button>
               </div>
             )}
           </motion.div>

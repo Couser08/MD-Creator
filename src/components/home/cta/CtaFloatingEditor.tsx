@@ -18,7 +18,8 @@ import {
   LayoutTemplate, 
   UploadCloud, 
   Check,
-  Eye
+  Eye,
+  Trash2
 } from 'lucide-react';
 
 interface CtaFloatingEditorProps {
@@ -30,7 +31,7 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
   onOpenTemplates, 
   onOpenEditor 
 }) => {
-  const [activeNav, setActiveNav] = useState<'doc' | 'starred' | 'templates' | 'recents'>('doc');
+  const [activeNav, setActiveNav] = useState<'doc' | 'starred' | 'templates' | 'recents' | 'trash'>('doc');
   const [tasks, setTasks] = useState<{ id: string; label: string; done: boolean }[]>([
     { id: '1', label: 'Write', done: true },
     { id: '2', label: 'Learn', done: true },
@@ -205,6 +206,18 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
                 <Clock className="w-3.5 h-3.5 shrink-0" />
                 <span className="truncate hidden sm:inline">Recents</span>
               </button>
+
+              <button
+                onClick={() => setActiveNav('trash')}
+                className={`w-full text-left px-2.5 py-1.5 rounded-xl font-medium flex items-center gap-2 transition-all cursor-pointer ${
+                  activeNav === 'trash'
+                    ? 'bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white font-semibold'
+                    : 'text-neutral-500 hover:text-neutral-900 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/60'
+                }`}
+              >
+                <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                <span className="truncate hidden sm:inline">Trash</span>
+              </button>
             </div>
 
             <button
@@ -377,6 +390,33 @@ export const CtaFloatingEditor: React.FC<CtaFloatingEditorProps> = ({
         />
         <path 
           d="M 15 5 L 6 6 L 7 15" 
+          stroke="currentColor" 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+          strokeLinejoin="round" 
+        />
+      </svg>
+
+      {/* 6. Bottom-Right Handwritten Cursive Annotation */}
+      <div className="hidden lg:block absolute -bottom-5 right-2 sm:right-6 z-20 select-none text-right font-handwriting text-neutral-400 dark:text-neutral-500 text-xs sm:text-sm leading-tight">
+        <div>A better</div>
+        <div>way to write ☆</div>
+      </div>
+
+      {/* Curved SVG Arrow 5: Handwritten Note -> Upwards towards Export Card */}
+      <svg 
+        className="absolute -bottom-1 right-20 w-8 h-8 text-neutral-400 dark:text-neutral-500 pointer-events-none z-20 hidden lg:block" 
+        viewBox="0 0 30 30" 
+        fill="none"
+      >
+        <path 
+          d="M 22 24 C 18 16, 12 12, 6 6" 
+          stroke="currentColor" 
+          strokeWidth="1.5" 
+          strokeLinecap="round" 
+        />
+        <path 
+          d="M 14 5 L 6 6 L 7 14" 
           stroke="currentColor" 
           strokeWidth="1.5" 
           strokeLinecap="round" 

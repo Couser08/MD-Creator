@@ -1,4 +1,5 @@
 import React from 'react';
+import { ArrowRight } from 'lucide-react';
 import { BentoHeroCard } from './bento/BentoHeroCard';
 import { BentoExportCard } from './bento/BentoExportCard';
 import { BentoEditorCard } from './bento/BentoEditorCard';
@@ -43,6 +44,17 @@ export const BentoFeatures: React.FC<BentoFeaturesProps> = ({
           <BentoCalmerCard />
           <BentoTestimonialCard />
           <BentoWhatsNewCard onOpenUpdates={onOpenUpdates} />
+        </div>
+
+        {/* Explore All Features Deep Dive Button */}
+        <div className="pt-6 flex justify-center">
+          <button
+            onClick={onExploreFeatures}
+            className="px-6 py-3 rounded-2xl bg-white dark:bg-neutral-900 border border-neutral-200/90 dark:border-neutral-800 hover:border-blue-500 dark:hover:border-blue-500 text-neutral-900 dark:text-white font-bold text-xs sm:text-sm flex items-center gap-2.5 transition-all shadow-sm hover:shadow-md cursor-pointer group"
+          >
+            <span>Explore All 25+ Features &amp; Deep Dives</span>
+            <ArrowRight className="w-4 h-4 text-blue-600 dark:text-blue-400 group-hover:translate-x-1 transition-transform" />
+          </button>
         </div>
 
       </div>

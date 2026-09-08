@@ -14,6 +14,7 @@ const PricingPage = React.lazy(() => import('./pages/PricingPage').then((m) => (
 const BlogPage = React.lazy(() => import('./pages/BlogPage').then((m) => ({ default: m.BlogPage })));
 const UpdatesPage = React.lazy(() => import('./pages/UpdatesPage').then((m) => ({ default: m.UpdatesPage })));
 const FeedbackPage = React.lazy(() => import('./pages/FeedbackPage').then((m) => ({ default: m.FeedbackPage })));
+const FeaturesPage = React.lazy(() => import('./pages/FeaturesPage').then((m) => ({ default: m.FeaturesPage })));
 
 // Lazy-loaded global utility modals (zero impact on initial critical render)
 const GlobalConfirmDialog = React.lazy(() =>
@@ -87,6 +88,7 @@ export const App: React.FC = () => {
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/blog" element={<BlogPage />} />
           <Route path="/updates" element={<UpdatesPage />} />
+          <Route path="/features" element={<FeaturesPage />} />
           <Route path="/feedback" element={<FeedbackPage />} />
           <Route path="/auth" element={<AuthPage />} />
           <Route path="/editor" element={<EditorPage />} />

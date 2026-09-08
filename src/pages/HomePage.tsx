@@ -1,4 +1,5 @@
 import React, { useState, useEffect, Suspense } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Navbar } from '../components/home/Navbar';
 import { Hero } from '../components/home/Hero';
 import { FeatureStrip } from '../components/home/FeatureStrip';
@@ -14,14 +15,11 @@ const DemoModal = React.lazy(() =>
 const TemplatesModal = React.lazy(() =>
   import('../components/home/TemplatesModal').then((m) => ({ default: m.TemplatesModal }))
 );
-const ProductUpdatesModal = React.lazy(() =>
-  import('../components/home/ProductUpdatesModal').then((m) => ({ default: m.ProductUpdatesModal }))
-);
 
 export const HomePage: React.FC = () => {
+  const navigate = useNavigate();
   const [isDemoOpen, setIsDemoOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
-  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
 
   // Global listener for Templates modal trigger and URL query param
   useEffect(() => {
@@ -50,7 +48,7 @@ export const HomePage: React.FC = () => {
           const el = document.getElementById('features');
           el?.scrollIntoView({ behavior: 'smooth' });
         }}
-        onOpenUpdates={() => setIsUpdatesOpen(true)}
+        onOpenUpdates={() => navigate('/updates')}
       />
 
       {/* Main Content Sections */}
@@ -64,7 +62,7 @@ export const HomePage: React.FC = () => {
         {/* Bento Grid Features */}
         <BentoFeatures 
           onExploreFeatures={() => setIsDemoOpen(true)} 
-          onOpenUpdates={() => setIsUpdatesOpen(true)}
+          onOpenUpdates={() => navigate('/updates')}
           onOpenTemplates={() => setIsTemplatesOpen(true)}
         />
 
@@ -76,7 +74,7 @@ export const HomePage: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <Footer onOpenUpdates={() => setIsUpdatesOpen(true)} />
+      <Footer onOpenUpdates={() => navigate('/updates')} />
 
       {/* Interactive Modals — Lazy Loaded On-Demand */}
       {isDemoOpen && (
@@ -84,7 +82,7 @@ export const HomePage: React.FC = () => {
           <DemoModal 
             isOpen={isDemoOpen} 
             onClose={() => setIsDemoOpen(false)} 
-            onOpenUpdates={() => setIsUpdatesOpen(true)}
+            onOpenUpdates={() => navigate('/updates')}
           />
         </Suspense>
       )}
@@ -94,16 +92,6 @@ export const HomePage: React.FC = () => {
           <TemplatesModal 
             isOpen={isTemplatesOpen} 
             onClose={() => setIsTemplatesOpen(false)} 
-          />
-        </Suspense>
-      )}
-
-      {/* Crafted-with-Love Release Timeline & What's New Modal */}
-      {isUpdatesOpen && (
-        <Suspense fallback={null}>
-          <ProductUpdatesModal 
-            isOpen={isUpdatesOpen} 
-            onClose={() => setIsUpdatesOpen(false)} 
           />
         </Suspense>
       )}

@@ -366,7 +366,7 @@ export const FeedbackPage: React.FC = () => {
                   Would you pay for premium capabilities like cross-device cloud sync, team collaboration, or custom branding?
                 </p>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                   {[
                     { id: 'yes', label: 'Yes ($5–$10 / mo)', desc: 'For sync & teams' },
                     { id: 'maybe', label: 'Maybe', desc: 'Depends on feature' },
@@ -376,14 +376,14 @@ export const FeedbackPage: React.FC = () => {
                       key={opt.id}
                       type="button"
                       onClick={() => setWillingnessToPay(willingnessToPay === opt.id ? '' : opt.id)}
-                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer ${
                         willingnessToPay === opt.id
-                          ? 'border-neutral-950 dark:border-white bg-neutral-950 text-white dark:bg-white dark:text-neutral-950 font-semibold shadow-xs'
-                          : 'border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-850 text-neutral-700 dark:text-neutral-300 hover:border-neutral-300 dark:hover:border-neutral-600'
+                          ? 'border-blue-600 dark:border-blue-400 bg-blue-50/90 dark:bg-blue-950/70 text-blue-950 dark:text-blue-100 font-bold shadow-xs ring-2 ring-blue-500/20'
+                          : 'border-neutral-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 hover:border-neutral-300 dark:hover:border-neutral-700'
                       }`}
                     >
                       <div className="font-bold text-xs">{opt.label}</div>
-                      <div className={`text-[10px] mt-0.5 ${willingnessToPay === opt.id ? 'opacity-80' : 'text-neutral-400'}`}>{opt.desc}</div>
+                      <div className={`text-[10.5px] mt-0.5 ${willingnessToPay === opt.id ? 'text-blue-700 dark:text-blue-300' : 'text-neutral-500 dark:text-neutral-400'}`}>{opt.desc}</div>
                     </button>
                   ))}
                 </div>
@@ -394,7 +394,7 @@ export const FeedbackPage: React.FC = () => {
                     placeholder="Which specific feature would you pay for most? (e.g., Live Team Sync, PDF Covers, AI Copilot)"
                     value={monetizationFeature}
                     onChange={(e) => setMonetizationFeature(e.target.value)}
-                    className="w-full px-3.5 py-2 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-neutral-900 dark:text-white placeholder:text-neutral-400 focus:outline-none focus:ring-1 focus:ring-neutral-400"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-neutral-900 dark:text-white placeholder:text-neutral-400 dark:placeholder:text-neutral-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                   />
                 </div>
               </div>

@@ -4,10 +4,18 @@ import { MockupMacBookFrame } from './mockup/MockupMacBookFrame';
 import { MockupWorkspace } from './mockup/MockupWorkspace';
 import { useMockupSimulation } from './mockup/useMockupSimulation';
 import { ViewMode, SideTab } from './mockup/mockupData';
+import { useThemeStore } from '../../stores/useThemeStore';
 
 export const EditorMockup: React.FC = () => {
   const navigate = useNavigate();
-  const [mockupTheme, setMockupTheme] = useState<'dark' | 'light'>('dark');
+  const { isDark, toggleTheme } = useThemeStore();
+  const mockupTheme = isDark ? 'dark' : 'light';
+  const setMockupTheme: React.Dispatch<React.SetStateAction<'dark' | 'light'>> = (action) => {
+    const next = typeof action === 'function' ? action(mockupTheme) : action;
+    if ((next === 'dark') !== isDark) {
+      toggleTheme();
+    }
+  };
   const [viewMode, setViewMode] = useState<ViewMode>('split');
   const [activeSideTab, setActiveSideTab] = useState<SideTab>('write');
 

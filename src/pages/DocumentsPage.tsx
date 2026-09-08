@@ -18,9 +18,6 @@ import { useDocuments, useCreateDocument, useDeleteDocument, useTogglePin } from
 import { saveDocument } from '../db';
 import { useConfirm } from '../stores/useConfirmStore';
 
-const ProductUpdatesModal = React.lazy(() =>
-  import('../components/home/ProductUpdatesModal').then((m) => ({ default: m.ProductUpdatesModal }))
-);
 const TemplatesModal = React.lazy(() =>
   import('../components/home/TemplatesModal').then((m) => ({ default: m.TemplatesModal }))
 );
@@ -29,7 +26,6 @@ export const DocumentsPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [activeTag, setActiveTag] = useState('All');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [isUpdatesOpen, setIsUpdatesOpen] = useState(false);
   const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
@@ -94,7 +90,7 @@ export const DocumentsPage: React.FC = () => {
   return (
     <div className="min-h-screen flex flex-col bg-white dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100 transition-colors">
       <Navbar 
-        onOpenUpdates={() => setIsUpdatesOpen(true)} 
+        onOpenUpdates={() => navigate('/updates')} 
         onOpenTemplates={() => setIsTemplatesOpen(true)} 
       />
 
@@ -345,17 +341,7 @@ export const DocumentsPage: React.FC = () => {
 
       </main>
 
-      <Footer onOpenUpdates={() => setIsUpdatesOpen(true)} />
-
-      {/* Crafted-with-Love Release Timeline Modal */}
-      {isUpdatesOpen && (
-        <React.Suspense fallback={null}>
-          <ProductUpdatesModal
-            isOpen={isUpdatesOpen}
-            onClose={() => setIsUpdatesOpen(false)}
-          />
-        </React.Suspense>
-      )}
+      <Footer onOpenUpdates={() => navigate('/updates')} />
 
       {/* Markdown Templates Library Modal */}
       {isTemplatesOpen && (

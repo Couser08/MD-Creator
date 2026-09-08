@@ -18,7 +18,13 @@ import {
   Keyboard,
   GitBranch,
   LayoutTemplate,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Braces,
+  Tag,
+  Bookmark,
+  FileDown,
+  Printer,
+  Sliders
 } from 'lucide-react';
 
 export interface CommandItem {
@@ -190,6 +196,54 @@ export const COMMANDS: CommandItem[] = [
     icon: ImageIcon,
     shortcut: '/image',
     insertSnippet: '__ACTION_OPEN_IMAGE_MODAL__'
+  },
+  {
+    id: 'api-json',
+    title: 'API Response (JSON)',
+    description: 'Structured REST JSON mock response with status & schema',
+    icon: Braces,
+    shortcut: '/json /api',
+    insertSnippet: '```json\n{\n  "status": 200,\n  "message": "Success",\n  "data": {\n    "id": "item_101",\n    "name": "Production Resource",\n    "active": true\n  }\n}\n```\n'
+  },
+  {
+    id: 'badge-status',
+    title: 'Status Badges',
+    description: 'Visual status badges (Active, Passing, v1.0)',
+    icon: Tag,
+    shortcut: '/badge /status',
+    insertSnippet: '![Status: Active](https://img.shields.io/badge/status-active-emerald?style=flat-square) ![Build: Passing](https://img.shields.io/badge/build-passing-brightgreen?style=flat-square) ![Version: 1.0.0](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)\n\n'
+  },
+  {
+    id: 'footnote',
+    title: 'Footnote & Citation',
+    description: 'Inline reference citation badge with matching definition',
+    icon: Bookmark,
+    shortcut: '/footnote /fn',
+    insertSnippet: '[^1]\n\n[^1]: Explanatory citation or reference source.\n'
+  },
+  {
+    id: 'export-md',
+    title: 'Export Markdown (.md)',
+    description: 'Directly download current document as a .md file',
+    icon: FileDown,
+    shortcut: '/exportmd',
+    insertSnippet: '__ACTION_EXPORT_MD__'
+  },
+  {
+    id: 'export-pdf',
+    title: 'Export to PDF Studio',
+    description: 'Open publication-ready PDF toolbar with themes & cover styling',
+    icon: Printer,
+    shortcut: '/exportpdf',
+    insertSnippet: '__ACTION_OPEN_PDF_STUDIO__'
+  },
+  {
+    id: 'yaml-frontmatter',
+    title: 'YAML Front Matter',
+    description: 'Metadata header for Jekyll, Hugo, Astro & Obsidian',
+    icon: Sliders,
+    shortcut: '/yaml /frontmatter',
+    insertSnippet: '__ACTION_INSERT_FRONTMATTER__'
   },
   {
     id: 'divider',

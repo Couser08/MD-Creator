@@ -12,6 +12,8 @@ interface UseSlashCommandsOptions {
   onOpenTemplates: () => void;
   onOpenMathStudio: () => void;
   onOpenImageModal?: () => void;
+  onExportMd?: () => void;
+  onOpenPdfStudio?: () => void;
 }
 
 export function useSlashCommands({
@@ -25,6 +27,8 @@ export function useSlashCommands({
   onOpenTemplates,
   onOpenMathStudio,
   onOpenImageModal,
+  onExportMd,
+  onOpenPdfStudio,
 }: UseSlashCommandsOptions) {
   const [isSlashMenuOpen, setIsSlashMenuOpen] = useState(false);
   const [slashQuery, setSlashQuery] = useState('');
@@ -85,6 +89,49 @@ export function useSlashCommands({
         setIsSlashMenuOpen(false);
         setSlashQuery('');
         onOpenImageModal?.();
+        return;
+      }
+
+      if (snippet === '__ACTION_EXPORT_MD__') {
+        setContent(cleanBefore + afterCursor);
+        setIsSlashMenuOpen(false);
+        setSlashQuery('');
+        onExportMd?.();
+        return;
+      }
+
+      if (snippet === '__ACTION_OPEN_PDF_STUDIO__') {
+        setContent(cleanBefore + afterCursor);
+        setIsSlashMenuOpen(false);
+        setSlashQuery('');
+        onOpenPdfStudio?.();
+        return;
+      }
+
+      if (snippet === '__ACTION_INSERT_FRONTMATTER__') {
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const yamlBlock = `---\ntitle: "${title || 'Untitled Document'}"\ndate: ${todayStr}\nauthor: "Author Name"\ntags: ["documentation", "guide"]\ndraft: false\n---\n\n`;
+        
+        let nextContent = '';
+        if (content.startsWith('---')) {
+          nextContent = cleanBefore + yamlBlock + afterCursor;
+        } else {
+          const stripped = cleanBefore + afterCursor;
+          nextContent = yamlBlock + stripped;
+        }
+
+        setContent(nextContent);
+        setIsSlashMenuOpen(false);
+        setSlashQuery('');
+        executeSave(nextContent, title);
+        setTimeout(() => {
+          if (textareaRef.current) {
+            textareaRef.current.focus();
+            const newPos = yamlBlock.length;
+            textareaRef.current.setSelectionRange(newPos, newPos);
+            updateCursorPosition();
+          }
+        }, 20);
         return;
       }
 

@@ -66,15 +66,12 @@ const RESOURCE_ITEMS: ResourceItem[] = [
     id: 'updates',
     title: 'Changelog & Updates',
     desc: '60FPS canvas & roadmap timeline',
-    badge: 'v3.1',
+    badge: 'v0.8.0',
     icon: Sparkles,
     iconColor: 'text-indigo-600 dark:text-indigo-400',
     iconBg: 'bg-indigo-50 dark:bg-indigo-950/60 border-indigo-200/40 dark:border-indigo-900/40',
     path: '/updates',
-    action: ({ onOpenUpdates, navigate }) => {
-      if (onOpenUpdates) onOpenUpdates();
-      else navigate('/updates');
-    }
+    action: ({ navigate }) => navigate('/updates')
   },
   {
     id: 'pricing',
@@ -108,7 +105,7 @@ const RESOURCE_ITEMS: ResourceItem[] = [
   }
 ];
 
-export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures, onOpenUpdates }) => {
+export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures: _onOpenFeatures, onOpenUpdates }) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isDark, toggleTheme } = useThemeStore();
@@ -236,11 +233,12 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures,
           </button>
 
           <button 
-            onClick={() => {
-              handleNavClick('features');
-              onOpenFeatures?.();
-            }}
-            className="px-3 py-1.5 rounded-lg hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/60 transition-colors cursor-pointer"
+            onClick={() => navigate('/features')}
+            className={`px-3 py-1.5 rounded-lg transition-colors cursor-pointer ${
+              location.pathname === '/features' 
+                ? 'text-neutral-950 dark:text-white font-semibold bg-neutral-100 dark:bg-neutral-800' 
+                : 'hover:text-neutral-950 dark:hover:text-white hover:bg-neutral-100/60 dark:hover:bg-neutral-800/60'
+            }`}
           >
             Features
           </button>
@@ -411,8 +409,15 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures,
           </div>
 
           <button
-            onClick={() => handleNavClick('features')}
-            className="w-full p-2.5 rounded-xl text-left font-semibold text-xs bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200 cursor-pointer"
+            onClick={() => {
+              setIsMobileMenuOpen(false);
+              navigate('/features');
+            }}
+            className={`w-full p-2.5 rounded-xl text-left font-semibold text-xs cursor-pointer ${
+              location.pathname === '/features'
+                ? 'bg-neutral-200 dark:bg-neutral-800 text-neutral-950 dark:text-white font-bold'
+                : 'bg-neutral-50 dark:bg-neutral-900 text-neutral-800 dark:text-neutral-200'
+            }`}
           >
             Features
           </button>

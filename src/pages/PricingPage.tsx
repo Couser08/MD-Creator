@@ -13,8 +13,10 @@ import {
 import { Navbar } from '../components/home/Navbar';
 import { Footer } from '../components/home/Footer';
 import { CtaBanner } from '../components/home/CtaBanner';
-
 import { supabase } from '../lib/supabase';
+import { useAuthStore } from '../stores/useAuthStore';
+import { WaitlistSuccessModal } from '../components/common/WaitlistSuccessModal';
+import { WaitlistAdminPanel } from '../components/pricing/WaitlistAdminPanel';
 
 interface PricingTier {
   id: string;
@@ -134,29 +136,38 @@ const FAQS = [
 ];
 
 export const PricingPage: React.FC = () => {
+  const { user } = useAuthStore();
   const [isAnnual, setIsAnnual] = useState(true);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
   const [waitlistEmail, setWaitlistEmail] = useState('');
   const [isWaitlistSubmitting, setIsWaitlistSubmitting] = useState(false);
   const [isWaitlistSubmitted, setIsWaitlistSubmitted] = useState(false);
+  const [isSuccessModalOpen, setIsSuccessModalOpen] = useState(false);
+  const [lastSubmittedEmail, setLastSubmittedEmail] = useState('');
   const navigate = useNavigate();
+
+  const isAdmin = user?.email?.toLowerCase() === 'tungariyarahul08@gmail.com';
 
   const handleWaitlistSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!waitlistEmail || !waitlistEmail.includes('@')) return;
+    const submitted = waitlistEmail;
     setIsWaitlistSubmitting(true);
     try {
       if (typeof window !== 'undefined') {
-        localStorage.setItem('mdwriter_waitlist_email', waitlistEmail);
+        localStorage.setItem('mdwriter_waitlist_email', submitted);
       }
       if (supabase) {
-        await supabase.from('waitlist').insert([{ email: waitlistEmail, plan: 'pro', created_at: new Date().toISOString() }]);
+        await supabase.from('waitlist').insert([{ email: submitted, plan: 'pro', created_at: new Date().toISOString() }]);
       }
     } catch (err) {
       console.warn('Waitlist registered locally:', err);
     } finally {
       setIsWaitlistSubmitting(false);
       setIsWaitlistSubmitted(true);
+      setLastSubmittedEmail(submitted);
+      setIsSuccessModalOpen(true);
+      setWaitlistEmail('');
     }
   };
 
@@ -409,6 +420,13 @@ export const PricingPage: React.FC = () => {
           </div>
         </section>
 
+        {/* Admin Hub for tungariyarahul08@gmail.com */}
+        {isAdmin && (
+          <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+            <WaitlistAdminPanel />
+          </section>
+        )}
+
         {/* FAQ Accordion Section */}
         <section className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-neutral-100 dark:border-neutral-800/80">
           <div className="text-center mb-10">
@@ -451,6 +469,12 @@ export const PricingPage: React.FC = () => {
         <CtaBanner onOpenTemplates={() => navigate('/editor')} />
 
       </main>
+
+      <WaitlistSuccessModal
+        isOpen={isSuccessModalOpen}
+        onClose={() => setIsSuccessModalOpen(false)}
+        email={lastSubmittedEmail}
+      />
 
       <Footer />
     </div>
