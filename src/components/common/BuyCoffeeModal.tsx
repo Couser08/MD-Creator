@@ -9,6 +9,7 @@ import {
   Zap
 } from 'lucide-react';
 import { FluentEmoji } from '../../utils/appleEmoji';
+import { BmcCoffeeCupIcon, BMC_URL } from './BuyMeCoffeeButton';
 
 export { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
 
@@ -266,12 +267,12 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
 
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       <a
-                        href="https://buymeacoffee.com"
+                        href={BMC_URL}
                         target="_blank"
                         rel="noreferrer"
-                        className="p-2.5 rounded-xl border border-neutral-200 dark:border-neutral-700 hover:border-amber-400 dark:hover:border-amber-500 bg-amber-400/10 text-neutral-900 dark:text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors"
+                        className="p-2.5 rounded-xl border border-amber-300 dark:border-amber-700 bg-[#FFDD00] hover:bg-[#ffe633] text-black font-extrabold text-xs flex items-center justify-center gap-1.5 shadow-xs hover:shadow-md transition-all hover:scale-[1.02] active:scale-95 cursor-pointer"
                       >
-                        <FluentEmoji emoji="☕" size="1.1em" />
+                        <BmcCoffeeCupIcon className="w-4 h-4 shrink-0" />
                         <span>Buy Me a Coffee</span>
                       </a>
 
@@ -327,13 +328,16 @@ export const BuyCoffeeModal: React.FC<BuyCoffeeModalProps> = ({
                   <span>Direct creator support</span>
                 </div>
 
-                <button
+                <a
+                  href={BMC_URL}
+                  target="_blank"
+                  rel="noreferrer"
                   onClick={() => setIsSuccess(true)}
-                  className="px-6 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold text-xs transition-all flex items-center gap-2 shadow-sm hover:shadow cursor-pointer"
+                  className="px-6 py-2.5 rounded-xl bg-[#FFDD00] hover:bg-[#ffe633] text-black font-extrabold text-xs transition-all flex items-center gap-2 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 cursor-pointer border border-black/15 font-sans"
                 >
-                  <Heart className="w-3.5 h-3.5 fill-current" />
-                  <span>Support ${getActiveAmount()}</span>
-                </button>
+                  <BmcCoffeeCupIcon className="w-4 h-4 shrink-0" />
+                  <span>Buy me a coffee (${getActiveAmount()})</span>
+                </a>
               </div>
             )}
           </motion.div>

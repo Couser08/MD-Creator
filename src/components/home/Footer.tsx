@@ -1,6 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
+import { BmcCoffeeCupIcon } from '../common/BuyMeCoffeeButton';
 
 interface FooterProps {
   onOpenUpdates?: () => void;
@@ -63,9 +64,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenUpdates }) => {
               <button
                 type="button"
                 onClick={openBuyCoffeeModal}
-                className="hover:text-amber-700 dark:hover:text-amber-300 transition-colors cursor-pointer flex items-center gap-1 font-semibold text-amber-600 dark:text-amber-400"
+                className="hover:text-amber-500 transition-colors cursor-pointer flex items-center gap-1.5 font-bold text-amber-600 dark:text-amber-400"
               >
-                <span>☕ Buy Coffee</span>
+                <BmcCoffeeCupIcon className="w-3.5 h-3.5" />
+                <span>Buy me a coffee</span>
               </button>
               <a href="#about" className="hover:text-neutral-900 dark:hover:text-white transition-colors">
                 About

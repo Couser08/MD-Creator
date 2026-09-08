@@ -4,7 +4,6 @@ import {
   Sun, 
   Moon, 
   FolderOpen, 
-  Coffee, 
   ChevronDown, 
   LayoutTemplate, 
   Sparkles, 
@@ -21,6 +20,7 @@ import { ProfileDropdown } from '../auth/ProfileDropdown';
 import { PwaInstallButton } from '../common/PwaInstallButton';
 import { openBuyCoffeeModal } from '../../utils/coffeeModalEvents';
 import { openTemplatesModal } from '../../utils/templateModalEvents';
+import { BmcCoffeeCupIcon } from '../common/BuyMeCoffeeButton';
 
 interface NavbarProps {
   onOpenTemplates?: () => void;
@@ -303,18 +303,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures:
           {/* Buy Me a Coffee Sleek Button */}
           <button
             onClick={openBuyCoffeeModal}
-            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800/70 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
-            title="Support the creator"
+            className="hidden lg:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold bg-[#FFDD00] hover:bg-[#ffe633] text-black border border-black/15 transition-all cursor-pointer hover:scale-105 active:scale-95 shadow-xs"
+            title="Buy me a coffee"
           >
-            <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+            <BmcCoffeeCupIcon className="w-3.5 h-3.5 shrink-0" />
             <span>Buy Coffee</span>
           </button>
           <button
             onClick={openBuyCoffeeModal}
-            className="lg:hidden w-9 h-9 rounded-full flex items-center justify-center bg-amber-50 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800 transition-colors cursor-pointer"
+            className="lg:hidden w-9 h-9 rounded-full flex items-center justify-center bg-[#FFDD00] hover:bg-[#ffe633] text-black border border-black/15 transition-transform active:scale-95 cursor-pointer shadow-xs"
             title="Buy me a coffee"
           >
-            <Coffee className="w-4 h-4" />
+            <BmcCoffeeCupIcon className="w-4 h-4 shrink-0" />
           </button>
 
           {/* PWA Install Button (Compact icon on desktop, full drawer entry on mobile) */}
@@ -462,9 +462,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onOpenTemplates, onOpenFeatures:
                 setIsMobileMenuOpen(false);
                 openBuyCoffeeModal();
               }}
-              className="flex-1 py-2 rounded-xl text-xs font-semibold bg-amber-50 dark:bg-amber-950/50 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 flex items-center justify-center gap-1.5 cursor-pointer"
+              className="flex-1 py-2 rounded-xl text-xs font-bold bg-[#FFDD00] hover:bg-[#ffe633] text-black border border-black/15 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
             >
-              <Coffee className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
+              <BmcCoffeeCupIcon className="w-3.5 h-3.5 shrink-0" />
               <span>Buy Coffee</span>
             </button>
 
